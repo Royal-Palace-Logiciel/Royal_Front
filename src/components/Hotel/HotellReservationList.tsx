@@ -27,6 +27,7 @@ import { toast } from 'react-hot-toast';
 import AuthService from '../../services/authService';
 import { reservationService } from '../../services/reservation.service';
 import api from '../../lib/api';
+import spaService from '../../services/spa.service';
 
 interface ReservationListProps {
   reservations?: Reservation[];
@@ -67,6 +68,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [enrichedReservations, setEnrichedReservations] = useState<Reservation[]>([]);
   const [barSpendByReservation, setBarSpendByReservation] = useState<Record<number, number>>({});
+  const [spaSpendByReservation, setSpaSpendByReservation] = useState<Record<number, number>>({});
   const [historyFromDate, setHistoryFromDate] = useState('');
   const [historyToDate, setHistoryToDate] = useState('');
   const [userSearchTerm, setUserSearchTerm] = useState('');
@@ -157,6 +159,11 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
     };
 
     void loadBarSpendByReservation();
+
+    // Ventes piscine (module SPA) portées sur la note de chambre.
+    spaService.getRoomCharges()
+      .then((rows) => { if (isMounted) setSpaSpendByReservation(Object.fromEntries(rows.map((row) => [row.hotelReservationId, row.total]))); })
+      .catch(() => { if (isMounted) setSpaSpendByReservation({}); });
 
     return () => {
       isMounted = false;
@@ -529,6 +536,9 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
                             <span className="text-amber-300">Bar {formatCurrency(barSpend)}</span>
                           ) : null;
                         })()}
+                        {Number(spaSpendByReservation[res.id] || 0) > 0 && (
+                          <span className="text-cyan-300">Piscine {formatCurrency(spaSpendByReservation[res.id])}</span>
+                        )}
                         {res.moyen_paiement && res.statut === 'TERMINEE' && (
                           <span className="text-sky-300">Paiement : {res.moyen_paiement.replace('_', ' ')}</span>
                         )}

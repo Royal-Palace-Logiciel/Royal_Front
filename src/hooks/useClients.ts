@@ -10,7 +10,7 @@ export const useClients = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Charger tous les clients
-  const loadClients = useCallback(async (filters?: { nom?: string; statut?: string; is_casino_player?: boolean }) => {
+  const loadClients = useCallback(async (filters?: { nom?: string; statut?: string }) => {
     try {
       setLoading(true);
       setError(null);

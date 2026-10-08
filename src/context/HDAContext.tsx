@@ -4,7 +4,6 @@ import {
   StockItem,
   CaisseTransaction,
   User,
-  JeuCasino,
   ModuleType,
   Reservation,
   Commande,
@@ -15,7 +14,6 @@ import {
   initialUsers,
   initialStockItems,
   initialTransactions,
-  initialJeuxCasino,
   reservations,
   commandes,
   stockMovements,
@@ -31,7 +29,6 @@ interface HDAState {
   currentUser: User;
   stockItems: StockItem[];
   transactions: CaisseTransaction[];
-  jeux: JeuCasino[];
   reservations: Reservation[];
   commandes: Commande[];
   stockMovements: StockMovement[];
@@ -111,7 +108,6 @@ type Action =
   | { type: 'DELETE_STOCK_ITEM'; payload: string }
   // Actions Transactions
   | { type: 'ADD_TRANSACTION'; payload: Omit<CaisseTransaction, 'id' | 'date'> }
-  | { type: 'ADD_CASINO_TRANSACTION'; payload: { jeuId: string; transaction: Omit<CaisseTransaction, 'id' | 'date'> } }
   // Actions Utilisateurs
   | { type: 'ADD_USER'; payload: Omit<User, 'id' | 'createdAt'> }
   | { type: 'UPDATE_USER'; payload: User }
@@ -126,8 +122,6 @@ type Action =
   | { type: 'ADD_COMMANDE'; payload: Omit<Commande, 'id' | 'createdAt'> }
   | { type: 'UPDATE_COMMANDE'; payload: Commande }
   | { type: 'DELETE_COMMANDE'; payload: string }
-  // Actions Jeux Casino
-  | { type: 'UPDATE_JEU'; payload: JeuCasino }
   // Actions Notifications
   | { type: 'ADD_NOTIFICATION'; payload: Omit<Notification, 'id' | 'timestamp'> }
   | { type: 'CLEAR_NOTIFICATION'; payload: string }
@@ -184,42 +178,6 @@ const hdaReducer = (state: HDAState, action: Action): HDAState => {
         date: new Date().toISOString(),
       };
       return { ...state, transactions: [newTransaction, ...state.transactions] };
-    }
-
-    case 'ADD_CASINO_TRANSACTION': {
-      const { jeuId, transaction } = action.payload;
-      const newTransaction: CaisseTransaction = {
-        ...transaction,
-        id: generateId(),
-        date: new Date().toISOString(),
-      };
-
-      const updatedJeux = state.jeux.map(jeu => {
-        if (jeu.id === jeuId) {
-          const delta = transaction.type === 'entree' ? transaction.montant : -transaction.montant;
-          return {
-            ...jeu,
-            caisse: {
-              ...jeu.caisse,
-              soldeTotal: jeu.caisse.soldeTotal + delta,
-              totalEntrees: transaction.type === 'entree'
-                ? jeu.caisse.totalEntrees + transaction.montant
-                : jeu.caisse.totalEntrees,
-              totalSorties: transaction.type === 'sortie'
-                ? jeu.caisse.totalSorties + transaction.montant
-                : jeu.caisse.totalSorties,
-              transactions: [newTransaction, ...jeu.caisse.transactions]
-            }
-          };
-        }
-        return jeu;
-      });
-
-      return {
-        ...state,
-        jeux: updatedJeux,
-        transactions: [newTransaction, ...state.transactions]
-      };
     }
 
     // ===== UTILISATEURS =====
@@ -298,13 +256,6 @@ const hdaReducer = (state: HDAState, action: Action): HDAState => {
         commandes: state.commandes.filter(c => c.id !== action.payload)
       };
 
-    // ===== JEUX CASINO =====
-    case 'UPDATE_JEU':
-      return {
-        ...state,
-        jeux: state.jeux.map(j => j.id === action.payload.id ? action.payload : j)
-      };
-
     // ===== NOTIFICATIONS =====
     case 'ADD_NOTIFICATION': {
       const notif: Notification = {
@@ -381,7 +332,6 @@ const initialState: HDAState = {
   currentUser: normalizeAuthUser(AuthService.getCurrentUser()) || initialUsers[0], // ⬅️ Récupération dynamique de la session active
   stockItems: initialStockItems,
   transactions: initialTransactions,
-  jeux: initialJeuxCasino,
   reservations: reservations,
   commandes: commandes,
   orders: commandes,
@@ -401,7 +351,6 @@ interface HDAContextType {
   getModuleTransactions: (module: ModuleType) => CaisseTransaction[];
   getModuleStock: (module: ModuleType) => StockItem[];
   getModuleCaisseSolde: (module: ModuleType) => { solde: number; entrees: number; sorties: number };
-  getCasinoTotalCaisse: () => { solde: number; entrees: number; sorties: number };
   getGlobalStats: () => { totalRevenu: number; totalDepenses: number; soldeGlobal: number };
   addNotification: (type: 'info' | 'success' | 'warning' | 'error', message: string, source?: string, actionUrl?: string) => void;
   clearNotification: (id: string) => void;
@@ -445,13 +394,6 @@ export const HDAProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { solde: entrees - sorties, entrees, sorties };
   };
 
-  const getCasinoTotalCaisse = () => {
-    const solde = state.jeux.reduce((sum, j) => sum + j.caisse.soldeTotal, 0);
-    const entrees = state.jeux.reduce((sum, j) => sum + j.caisse.totalEntrees, 0);
-    const sorties = state.jeux.reduce((sum, j) => sum + j.caisse.totalSorties, 0);
-    return { solde, entrees, sorties };
-  };
-
   const getGlobalStats = () => {
     const modules: ModuleType[] = ['hebergement', 'hotel', 'restaurant', 'bar'];
     let totalRevenu = 0;
@@ -462,10 +404,6 @@ export const HDAProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       totalRevenu += entrees;
       totalDepenses += sorties;
     });
-
-    const casino = getCasinoTotalCaisse();
-    totalRevenu += casino.entrees;
-    totalDepenses += casino.sorties;
 
     return { totalRevenu, totalDepenses, soldeGlobal: totalRevenu - totalDepenses };
   };
@@ -492,7 +430,6 @@ export const HDAProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       getModuleTransactions,
       getModuleStock,
       getModuleCaisseSolde,
-      getCasinoTotalCaisse,
       getGlobalStats,
       addNotification,
       clearNotification,

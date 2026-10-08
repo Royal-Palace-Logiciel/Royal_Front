@@ -8,7 +8,7 @@ import rhService, { RHAttendance, RHDashboard, RHDepartmentBudget, RHDocument, R
 
 type RHView = 'overview' | 'employees' | 'attendance' | 'payroll' | 'evaluations';
 type Toast = (message: string, type: 'success' | 'error') => void;
-const departments = ['Administration', 'Réception', 'Restauration', 'Casino', 'Maintenance', 'Hébergement', 'Sécurité'];
+const departments = ['Administration', 'Réception', 'Restauration', 'Maintenance', 'Hébergement', 'Sécurité'];
 const contractTypes = ['CDI', 'CDD', 'Prestataire', 'Stagiaire'];
 // Contrats soumis aux cotisations CNAPS / OSTIE / IRSA.
 const salariedContracts = ['CDI', 'CDD'];
@@ -60,7 +60,7 @@ export const RHPage: React.FC = () => {
 
 // ─────────────────────────────────────────────
 // Vue self-service : tout utilisateur non admin/manager (barman, réceptionniste,
-// croupier, etc.). Toujours sur la route /rh, toujours dans cette page — pas
+// etc.). Toujours sur la route /rh, toujours dans cette page — pas
 // d'onglet séparé. Lecture seule sur sa fiche + demande de congé uniquement.
 // ─────────────────────────────────────────────
 const MyRHSpace: React.FC = () => {

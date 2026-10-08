@@ -11,17 +11,16 @@ import { ModuleType, UserRole } from '../types';
  * - stock_manager : uniquement les fonctions de gestion de stock (onglets stock)
  */
 export const ROLE_MODULE_PERMISSIONS: Record<string, ModuleType[]> = {
-  admin: ['dashboard', 'hebergement', 'hotel', 'restaurant', 'bar', 'alcool', 'casino', 'finances', 'clients', 'utilisateurs', 'rh', 'planning'],
+  admin: ['dashboard', 'hebergement', 'hotel', 'restaurant', 'bar', 'alcool', 'spa', 'finances', 'clients', 'utilisateurs', 'rh', 'planning'],
   manager: ['dashboard', 'rh'],
-  caissier: ['finances', 'restaurant', 'bar', 'alcool', 'casino', 'hebergement'],
-  caisse: ['finances', 'restaurant', 'bar', 'alcool', 'casino', 'hebergement'],
+  caissier: ['finances', 'restaurant', 'bar', 'alcool', 'spa', 'hebergement'],
+  caisse: ['finances', 'restaurant', 'bar', 'alcool', 'spa', 'hebergement'],
   stock_manager: ['hotel', 'restaurant', 'bar', 'alcool', 'hebergement'],
   receptioniste: ['hebergement', 'hotel', 'bar', 'clients'],
   water: ['bar'],
   barman: ['bar'],
   hotesse: ['bar'],
   housekeeping: ['hotel', 'hebergement'],
-  croupier: ['casino'],
 };
 
 /**
@@ -33,7 +32,14 @@ const ADMIN_ONLY_MODULES: ModuleType[] = ['utilisateurs'];
  * Parse de façon robuste les modules d'un utilisateur, quel que soit leur format
  * (tableau de strings, tableau d'objets, JSON stringifié, CSV).
  */
+// Modules retirés du logiciel : encore présents sur d'anciens comptes, ils sont ignorés.
+const REMOVED_MODULES = ['casino'];
+
 export function parseUserModules(rawModules: any): string[] {
+  return parseRawModules(rawModules).filter((m) => !REMOVED_MODULES.includes(m));
+}
+
+function parseRawModules(rawModules: any): string[] {
   if (!rawModules) return [];
 
   if (Array.isArray(rawModules)) {
@@ -117,7 +123,7 @@ export function canAccessModule(
     if (userModules.length > 0) {
       return userModules.includes(moduleId);
     }
-    return ['finances', 'restaurant', 'bar', 'alcool', 'casino', 'hebergement'].includes(moduleId);
+    return ['finances', 'restaurant', 'bar', 'alcool', 'spa', 'hebergement'].includes(moduleId);
   }
 
   // 6. Stock Manager : uniquement modules de stock (restaurant, bar, hotel, hebergement)
@@ -263,8 +269,6 @@ export function getDefaultRoute(user: { role: string; module?: string[] | any } 
     case 'barman':
     case 'hotesse':
       return '/bar';
-    case 'croupier':
-      return '/casino';
     case 'caissier':
     case 'caisse':
       return '/finances';

@@ -1,10 +1,9 @@
 // src/services/signature.service.ts
 import api from '../lib/api';
 
-// Étendre cette liste au fur et à mesure : 'casino_cash_operation' pour les recaves,
-// 'casino_credit' pour les crédits, etc. Doit rester synchronisé avec SIGNABLE_TYPES
+// Étendre cette liste au fur et à mesure. Doit rester synchronisé avec SIGNABLE_TYPES
 // côté backend (controllers/signatureController.js).
-export type SignableType = 'client_kyc' | 'casino_cash_operation' | 'casino_credit';
+export type SignableType = 'client_kyc';
 
 export interface SignatureRecord {
   id: number;

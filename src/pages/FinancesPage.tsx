@@ -16,7 +16,7 @@ const moduleConfig: Record<string, { label: string; gradient: string; color: str
   hotel: { label: 'Hôtel', gradient: 'from-indigo-500 to-blue-600', color: '#6366f1' },
   restaurant: { label: 'Restaurant', gradient: 'from-orange-500 to-amber-600', color: '#f97316' },
   bar: { label: 'Bar & Lounge', gradient: 'from-rose-500 to-pink-600', color: '#f43f5e' },
-  casino: { label: 'Casino', gradient: 'from-emerald-500 to-green-600', color: '#10b981' },
+  spa: { label: 'SPA — Piscine', gradient: 'from-cyan-500 to-sky-600', color: '#0891b2' },
   // Removed General, Facturation, and Hébergement (disabled)
 };
 
@@ -46,7 +46,7 @@ const normalizeModuleKey = (value?: string): string => {
   if (raw.includes('hotel')) return 'hotel';
   if (raw.includes('restaurant')) return 'restaurant';
   if (raw.includes('bar')) return 'bar';
-  if (raw.includes('casino')) return 'casino';
+  if (raw === 'spa' || raw.includes('piscine')) return 'spa';
   if (raw.includes('facturation')) return 'facturation';
   if (raw.includes('general')) return 'general';
 
@@ -115,7 +115,6 @@ export const FinancesPage: React.FC = () => {
             existing.ca += row.ca;
             existing.charges += row.charges;
             existing.solde += row.solde;
-            existing.resultat_final = (existing.resultat_final || 0) + (row.resultat_final || 0);
           } else {
             merged.set(key, { ...row, department });
           }
@@ -168,7 +167,6 @@ export const FinancesPage: React.FC = () => {
             existing.ca += row.ca;
             existing.charges += row.charges;
             existing.solde += row.solde;
-            existing.resultat_final = (existing.resultat_final || 0) + (row.resultat_final || 0);
           } else {
             merged.set(key, { ...row, department });
           }
@@ -245,7 +243,7 @@ export const FinancesPage: React.FC = () => {
       const csvRows: string[][] = [];
       
       // Add header section with report metadata
-      csvRows.push(['RAPPORT FINANCIER - HOTEL DE L\'AVENUE (HDA)']);
+      csvRows.push(['RAPPORT FINANCIER - ROYAL PALACE ANTSIRABE']);
       csvRows.push(['Généré le:', new Date().toLocaleString('fr-FR')]);
       csvRows.push(['Nombre total de transactions:', transactions.length.toString()]);
       csvRows.push([]);
@@ -386,7 +384,7 @@ export const FinancesPage: React.FC = () => {
   );
   const monthlyTableRows = Array.from({ length: 12 }, (_, i) => {
     const month = i + 1;
-    return monthlyRowsByMonth.get(month) || { department: monthlyDepartment, year: monthlyYear, month, ca: 0, charges: 0, solde: 0, resultat_final: 0 };
+    return monthlyRowsByMonth.get(month) || { department: monthlyDepartment, year: monthlyYear, month, ca: 0, charges: 0, solde: 0 };
   });  const visibleMonthlyRows = monthlyMonthFilter === 0
     ? monthlyTableRows
     : monthlyTableRows.filter(row => row.month === monthlyMonthFilter);
@@ -395,14 +393,12 @@ export const FinancesPage: React.FC = () => {
     ca: totals.ca + row.ca,
     charges: totals.charges + row.charges,
     solde: totals.solde + row.solde,
-    resultat_final: totals.resultat_final + (row.resultat_final || 0),
-  }), { ca: 0, charges: 0, solde: 0, resultat_final: 0 });
+  }), { ca: 0, charges: 0, solde: 0 });
   const monthlyTotals = visibleMonthlyRows.reduce((totals, row) => ({
     ca: totals.ca + row.ca,
     charges: totals.charges + row.charges,
     solde: totals.solde + row.solde,
-    resultat_final: totals.resultat_final + (row.resultat_final || 0),
-  }), { ca: 0, charges: 0, solde: 0, resultat_final: 0 });
+  }), { ca: 0, charges: 0, solde: 0 });
 
   const handleExportReportPdf = async () => {
     try {
@@ -413,8 +409,8 @@ export const FinancesPage: React.FC = () => {
       const reportTitle = reportPeriod === 'daily' ? 'Rapport journalier'
         : reportPeriod === 'weekly' ? 'Rapport hebdomadaire' : 'Rapport mensuel';
       let periodLabel: string;
-      let rows: Array<{ label: string; ca: number; charges: number; solde: number; resultat_final?: number }>;
-      let totals: { ca: number; charges: number; solde: number; resultat_final: number };
+      let rows: Array<{ label: string; ca: number; charges: number; solde: number }>;
+      let totals: { ca: number; charges: number; solde: number };
 
       if (reportPeriod === 'monthly') {
         periodLabel = monthlyMonthFilter === 0
@@ -425,7 +421,6 @@ export const FinancesPage: React.FC = () => {
           ca: row.ca,
           charges: row.charges,
           solde: row.solde,
-          resultat_final: row.resultat_final || 0,
         }));
         totals = monthlyTotals;
       } else {
@@ -445,14 +440,13 @@ export const FinancesPage: React.FC = () => {
           ca: row.ca,
           charges: row.charges,
           solde: row.solde,
-          resultat_final: row.resultat_final || 0,
         }));
         totals = periodTotals;
       }
 
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(18);
-      pdf.text('HDA - Rapport financier', 14, 18);
+      pdf.text('Royal Palace - Rapport financier', 14, 18);
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(10);
       pdf.text(`${reportTitle} | ${departmentName} | ${periodLabel}`, 14, 26);

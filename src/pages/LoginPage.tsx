@@ -318,7 +318,7 @@ export const LoginPage: React.FC = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full bg-surface-2 border border-base rounded-xl py-2.5 pl-10 pr-4 text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 transition-all"
-                  placeholder="admin@hda.com"
+                  placeholder="admin@royalpalace.mg"
                   required
                 />
               </div>
@@ -432,7 +432,7 @@ export const LoginPage: React.FC = () => {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-subtle text-sm">
-            © {new Date().getFullYear()} HDA — Hôtel de l'Avenue
+            © {new Date().getFullYear()} Royal Palace — Antsirabe
           </p>
         </div>
       </div>

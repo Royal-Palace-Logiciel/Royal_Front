@@ -15,7 +15,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/restaurant': 'Restaurant',
   '/bar': 'Bar & Lounge',
   '/alcool': 'Alcool',
-  '/casino': 'Casino',
+  '/spa': 'SPA — Piscine',
   '/planning': 'Planning',
   '/finances': 'Finances',
   '/clients': 'Clients',
@@ -183,7 +183,7 @@ export const Header: React.FC = () => {
             }}
           />
         </div>
-        <span className="text-muted text-xs hidden sm:block flex-shrink-0">HDA</span>
+        <span className="text-muted text-xs hidden sm:block flex-shrink-0">Royal Palace</span>
         <ChevronRight size={12} className="text-subtle hidden sm:block flex-shrink-0" />
         <span className="text-primary font-semibold text-sm truncate">
           {currentPage}

@@ -67,8 +67,6 @@ export interface MonthlyDepartmentReport {
   ca: number;
   charges: number;
   solde: number;
-  /** Casino : somme des « Résultat final » des fiches de calcul final de la période. */
-  resultat_final?: number;
 }
 
 export interface PeriodDepartmentReport {
@@ -78,8 +76,6 @@ export interface PeriodDepartmentReport {
   ca: number;
   charges: number;
   solde: number;
-  /** Casino : somme des « Résultat final » des fiches de calcul final de la période. */
-  resultat_final?: number;
 }
 
 export interface FinancialStats {

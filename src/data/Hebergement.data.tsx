@@ -67,12 +67,10 @@ export const INITIAL_ROOM_TYPES: RoomType[] = [
 
 export const INITIAL_CLIENTS: Client[] = [
   {
-    id: 1, code_client: 'CL001', nom: 'Rakoto', prenom: 'Jean', telephone: '+261 34 123 4567', email: 'jean@email.com', adresse: 'Antananarivo',
-    is_casino_player: undefined
+    id: 1, code_client: 'CL001', nom: 'Rakoto', prenom: 'Jean', telephone: '+261 34 123 4567', email: 'jean@email.com', adresse: 'Antananarivo'
   },
   {
-    id: 2, code_client: 'CL002', nom: 'Rabe', prenom: 'Marie', telephone: '+261 33 987 6543', email: 'marie@email.com', adresse: 'Antananarivo',
-    is_casino_player: undefined
+    id: 2, code_client: 'CL002', nom: 'Rabe', prenom: 'Marie', telephone: '+261 33 987 6543', email: 'marie@email.com', adresse: 'Antananarivo'
   },
 ];
 

@@ -6,6 +6,7 @@ import { formatDate } from '../utils/data';
 import { Modal, Input, Select, Button, Badge } from '../components/UI';
 import { Users, Plus, Edit2, Trash2, Shield, Eye, EyeOff, Key } from 'lucide-react';
 import api from '../lib/api';
+import { parseUserModules } from '../utils/permissions';
 // import { clientService, Client } from '../services/client.service';
 
 const roleLabels: Record<string, string> = {
@@ -15,7 +16,6 @@ const roleLabels: Record<string, string> = {
   caisse: 'Caissier',
   water: 'Barman',
   housekeeping: 'Personnel d’entretien',
-  croupier: 'Croupier',
   hotesse: 'Hôtesse',
 };
 
@@ -25,7 +25,6 @@ const formRoleLabels: Record<string, string> = {
   receptioniste: 'Réceptionniste (accès à l\'hôtel et au bar)',
   caisse: 'Caissier (encaissement uniquement)',
   water: 'Barman',
-  croupier: 'Croupier (accès au casino)',
   hotesse: 'Hôtesse (commandes du Bar uniquement)',
 };
 
@@ -36,7 +35,6 @@ const roleIcons: Record<string, string> = {
   caisse: '💰',
   water: '🍸',
   housekeeping: '🧹',
-  croupier: '🎲',
   hotesse: '🛎️',
 };
 
@@ -47,12 +45,12 @@ const moduleLabels: Record<string, string> = {
   planning: 'Planning',
   restaurant: 'Restaurant',
   bar: 'Bar',
-  casino: 'Casino',
+  spa: 'SPA — Piscine',
 };
 
 // Available modules for user role assignments
 // Note: 'hebergement' removed as the accommodation feature is currently disabled
-const allModules: ModuleType[] = ['hotel', 'restaurant', 'bar', 'casino', 'planning'];
+const allModules: ModuleType[] = ['hotel', 'restaurant', 'bar', 'spa', 'planning'];
 // Cashiers are currently only assigned to bar module (can be extended)
 const cashierModules: ModuleType[] = ['bar'];
 
@@ -61,23 +59,8 @@ const getApiErrorMessage = (error: any, fallback: string) => {
   return data?.error?.message || data?.message || error?.message || fallback;
 };
 
-const parseModules = (mod: any): ModuleType[] => {
-  if (!mod) return [];
-  if (Array.isArray(mod)) {
-    return mod.map(m => (typeof m === 'object' && m !== null ? m.id : String(m))) as ModuleType[];
-  }
-  if (typeof mod === 'string') {
-    try {
-      const parsed = JSON.parse(mod);
-      if (Array.isArray(parsed)) {
-        return parsed.map(m => (typeof m === 'object' && m !== null ? m.id : String(m))) as ModuleType[];
-      }
-    } catch {
-      return mod.split(',').map(s => s.trim()).filter(Boolean) as ModuleType[];
-    }
-  }
-  return [];
-};
+// Ignore aussi les modules retirés (ex. casino) encore présents sur d'anciens comptes.
+const parseModules = (mod: any): ModuleType[] => parseUserModules(mod) as ModuleType[];
 
 interface UserPresence {
   online: boolean;
@@ -107,9 +90,6 @@ export const UtilisateursPage: React.FC = () => {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [presence, setPresence] = useState<Record<string, UserPresence>>({});
   const [onlineOnly, setOnlineOnly] = useState(false);
-  // const [casinoPlayers, setCasinoPlayers] = useState<Client[]>([]);
-  // const [showPlayerModal, setShowPlayerModal] = useState(false);
-  // const [playerForm, setPlayerForm] = useState({ nom: '', prenom: '', telephone: '' });
   const [form, setForm] = useState({
     nom: '', prenom: '', email: '', role: 'manager' as UserRole,
     module: [] as ModuleType[], actif: true, password: ''
@@ -143,17 +123,8 @@ export const UtilisateursPage: React.FC = () => {
     }
   }, [dispatch]);
 
-  // const fetchCasinoPlayers = useCallback(async () => {
-  //   try {
-  //     setCasinoPlayers(await clientService.getClients({ is_casino_player: true }));
-  //   } catch (err: any) {
-  //     setErrorMessage(getApiErrorMessage(err, 'Impossible de charger les joueurs Casino.'));
-  //   }
-  // }, []);
-
   useEffect(() => {
     fetchRealUsers();
-    // fetchCasinoPlayers();
   }, [fetchRealUsers]);
 
   // Statut en ligne : rafraîchi toutes les 30 secondes
@@ -176,31 +147,6 @@ export const UtilisateursPage: React.FC = () => {
     const interval = window.setInterval(fetchPresence, 30000);
     return () => window.clearInterval(interval);
   }, [fetchPresence]);
-
-  // const createCasinoPlayer = async () => {
-  //   if (!playerForm.nom.trim()) {
-  //     setErrorMessage('Le nom du joueur est requis.');
-  //     return;
-  //   }
-  //   try {
-  //     setIsSubmitting(true);
-  //     setErrorMessage('');
-  //     await clientService.createClient({
-  //       nom: playerForm.nom.trim(),
-  //       prenom: playerForm.prenom.trim() || undefined,
-  //       telephone: playerForm.telephone.trim() || undefined,
-  //       is_casino_player: true,
-  //       statut: 'ACTIF',
-  //     });
-  //     setPlayerForm({ nom: '', prenom: '', telephone: '' });
-  //     setShowPlayerModal(false);
-  //     await fetchCasinoPlayers();
-  //   } catch (err: any) {
-  //     setErrorMessage(getApiErrorMessage(err, 'Impossible de créer le joueur.'));
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
 
   const isOnline = (user: User) => Boolean(presence[String(user.id)]?.online);
   const filtered = state.users
@@ -242,11 +188,11 @@ export const UtilisateursPage: React.FC = () => {
       }
     }
 
-    // Validation for cashier role: must be assigned to valid cashier modules (bar, restaurant, hotel, casino)
+    // Validation for cashier role: must be assigned to valid cashier modules (bar, restaurant, hotel, spa)
     if (form.role === 'caisse') {
       const selectedCashierModules = parseModules(form.module);
-      if (selectedCashierModules.length < 1 || selectedCashierModules.some(m => !['bar', 'restaurant', 'hotel', 'casino'].includes(m))) {
-        setErrorMessage('Un caissier doit être affecté à au moins une caisse : Bar, Restaurant, Hôtel ou Casino.');
+      if (selectedCashierModules.length < 1 || selectedCashierModules.some(m => !['bar', 'restaurant', 'hotel', 'spa'].includes(m))) {
+        setErrorMessage('Un caissier doit être affecté à au moins une caisse : Bar, Restaurant, Hôtel ou SPA.');
         return;
       }
     }
@@ -267,11 +213,6 @@ export const UtilisateursPage: React.FC = () => {
         setErrorMessage('Un réceptionniste doit être affecté au module Hôtel et/ou Bar.');
         return;
       }
-    }
-
-    if (form.role === 'croupier' && (parseModules(form.module).length !== 1 || parseModules(form.module)[0] !== 'casino')) {
-      setErrorMessage('Un croupier est affecté uniquement au module Casino.');
-      return;
     }
 
     try {
@@ -328,7 +269,7 @@ export const UtilisateursPage: React.FC = () => {
     const currentModules = parseModules(form.module);
     const exists = currentModules.includes(mod);
 
-    if (form.role === 'croupier' || form.role === 'hotesse') return;
+    if (form.role === 'hotesse') return;
 
     setErrorMessage('');
     setForm(prev => {
@@ -508,30 +449,6 @@ export const UtilisateursPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Joueurs Casino : profils clients sans compte de connexion - HIDDEN */}
-      {/* <div className="bg-surface border border-base rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-base">
-          <div>
-            <h3 className="text-primary font-semibold">Joueurs Casino</h3>
-            <p className="text-muted text-xs mt-1">Fiches joueurs sans email, mot de passe ni accès à l’application.</p>
-          </div>
-          <Button icon={<Plus size={16} />} onClick={() => { setErrorMessage(''); setShowPlayerModal(true); }}>Ajouter un joueur</Button>
-        </div>
-        <div className="divide-y divide-base">
-          {casinoPlayers.length === 0 ? (
-            <p className="px-6 py-5 text-sm text-muted">Aucun joueur Casino enregistré.</p>
-          ) : casinoPlayers.map((player) => (
-            <div key={player.id} className="flex items-center justify-between gap-4 px-6 py-3">
-              <div>
-                <p className="text-primary text-sm font-medium">{player.prenom} {player.nom}</p>
-                <p className="text-muted text-xs">{player.code_client || `Joueur #${player.id}`}{player.telephone ? ` · ${player.telephone}` : ''}</p>
-              </div>
-              <Badge variant={player.statut === 'ACTIF' ? 'actif' : 'inactif'}>{player.statut}</Badge>
-            </div>
-          ))}
-        </div>
-      </div> */}
-
       {/* Role Legend */}
       <div className="bg-surface border border-base rounded-2xl p-6">
         <h3 className="text-primary font-semibold mb-4 flex items-center gap-2">
@@ -569,7 +486,7 @@ export const UtilisateursPage: React.FC = () => {
             <Input label="Prénom" value={form.prenom} onChange={e => setForm({ ...form, prenom: e.target.value })} placeholder="Prénom" autoComplete="off" />
             <Input label="Nom" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} placeholder="Nom de famille" autoComplete="off" />
           </div>
-          <Input label="Email" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@hda.com" autoComplete="off" />
+          <Input label="Email" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@royalpalace.mg" autoComplete="off" />
 
           <div className="relative">
             <Input label="Mot de passe" type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="••••••••" autoComplete="new-password" />
@@ -580,7 +497,7 @@ export const UtilisateursPage: React.FC = () => {
 
           <Select label="Rôle" value={form.role} onChange={e => {
             const role = e.target.value as UserRole;
-            setForm({ ...form, role, module: role === 'caisse' ? cashierModules : role === 'water' || role === 'hotesse' ? ['bar'] : role === 'receptioniste' ? ['hotel', 'bar'] : role === 'croupier' ? ['casino'] : form.module });
+            setForm({ ...form, role, module: role === 'caisse' ? cashierModules : role === 'water' || role === 'hotesse' ? ['bar'] : role === 'receptioniste' ? ['hotel', 'bar'] : form.module });
           }}
             options={Object.entries(formRoleLabels).map(([k, v]) => ({ value: k, label: v }))} />
 
@@ -589,7 +506,7 @@ export const UtilisateursPage: React.FC = () => {
               <label className="text-muted text-sm font-medium">{form.role === 'caisse' ? 'Caisse(s) autorisée(s)' : 'Modules autorisés'}</label>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {(form.role === 'caisse' ? (['bar', 'restaurant', 'hotel'] as ModuleType[]) : form.role === 'water' || form.role === 'hotesse' ? (['bar'] as ModuleType[]) : form.role === 'receptioniste' ? (['hotel', 'bar'] as ModuleType[]) : form.role === 'croupier' ? (['casino'] as ModuleType[]) : allModules).map(mod => {
+              {(form.role === 'caisse' ? (['bar', 'restaurant', 'hotel', 'spa'] as ModuleType[]) : form.role === 'water' || form.role === 'hotesse' ? (['bar'] as ModuleType[]) : form.role === 'receptioniste' ? (['hotel', 'bar'] as ModuleType[]) : allModules).map(mod => {
                 const currentModules = parseModules(form.module);
                 const isSelected = currentModules.includes(mod);
                 return (
@@ -597,7 +514,7 @@ export const UtilisateursPage: React.FC = () => {
                     key={mod}
                     type="button"
                     onClick={() => toggleModule(mod)}
-                    disabled={form.role === 'water' || form.role === 'hotesse' || form.role === 'croupier'}
+                    disabled={form.role === 'water' || form.role === 'hotesse'}
                     className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${isSelected
                       ? 'bg-accent-4 text-accent border-accent/40'
                       : 'bg-surface-2 text-muted border-base hover:text-primary'
@@ -608,11 +525,10 @@ export const UtilisateursPage: React.FC = () => {
                 );
               })}
             </div>
-            {form.role === 'caisse' && <p className="mt-2 text-xs text-muted">Le caissier peut être affecté à : Bar, Restaurant, Hôtel ou Casino.</p>}
+            {form.role === 'caisse' && <p className="mt-2 text-xs text-muted">Le caissier peut être affecté à : Bar, Restaurant, Hôtel ou SPA.</p>}
             {form.role === 'water' && <p className="mt-2 text-xs text-muted">Le barman travaille dans le module Bar. Plusieurs barmans peuvent être ajoutés.</p>}
             {form.role === 'hotesse' && <p className="mt-2 text-xs text-muted">L’hôtesse accède uniquement aux commandes du Bar qu’elle a créées.</p>}
             {form.role === 'receptioniste' && <p className="mt-2 text-xs text-muted">Le réceptionniste travaille dans les modules Hôtel et Bar.</p>}
-            {form.role === 'croupier' && <p className="mt-2 text-xs text-muted">Le croupier travaille uniquement dans le module Casino.</p>}
           </div>
 
           <div className="flex items-center gap-3">
@@ -632,21 +548,6 @@ export const UtilisateursPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* <Modal isOpen={showPlayerModal} onClose={() => setShowPlayerModal(false)} title="Nouveau joueur Casino" size="md">
-        <div className="space-y-4">
-          {errorMessage && <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-sm">{errorMessage}</div>}
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Prénom" value={playerForm.prenom} onChange={e => setPlayerForm({ ...playerForm, prenom: e.target.value })} />
-            <Input label="Nom *" value={playerForm.nom} onChange={e => setPlayerForm({ ...playerForm, nom: e.target.value })} />
-          </div>
-          <Input label="Téléphone" value={playerForm.telephone} onChange={e => setPlayerForm({ ...playerForm, telephone: e.target.value })} />
-          <p className="text-xs text-muted">Ce profil ne crée aucun compte utilisateur : le joueur ne pourra pas se connecter.</p>
-          <div className="flex gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setShowPlayerModal(false)} className="flex-1">Annuler</Button>
-            <Button onClick={createCasinoPlayer} disabled={isSubmitting} className="flex-1">{isSubmitting ? 'Création…' : 'Créer la fiche'}</Button>
-          </div>
-        </div>
-      </Modal> */}
     </div>
   );
 };

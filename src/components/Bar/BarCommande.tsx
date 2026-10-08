@@ -6,7 +6,7 @@ import api from '../../lib/api';
 import barService from '../../services/bar.service';
 import { BAR_COMMANDES_ACTIONS } from '../../data/Bar.data';
 import { Badge, Button, Input, Modal, Select } from '../UI';
-import { Plus, Printer, XCircle, ChefHat, CheckCircle2, DollarSign, AlertTriangle, Gift, Dices, Hotel, MapPin } from 'lucide-react';
+import { Plus, Printer, XCircle, ChefHat, CheckCircle2, DollarSign, AlertTriangle, Gift, Hotel, MapPin } from 'lucide-react';
 import { clientService, type Client } from '../../services/client.service';
 import { reservationService } from '../../services/reservation.service';
 import AuthService from '../../services/authService';
@@ -44,7 +44,6 @@ const orderLocationOptions: OrderLocationOption[] = [
     tableId: index + 1,
   })),
   { kind: 'special', label: 'Gratuit', tableId: 0 },
-  { kind: 'special', label: 'Pocker gratuit', tableId: 0 },
   { kind: 'special', label: 'Chambre', tableId: 0 },
 ];
 
@@ -95,9 +94,6 @@ export const BarCommandeView: React.FC<Props> = ({
   const [menuSubcategory, setMenuSubcategory] = useState('Toutes');
   const [commandeSearchTerm, setCommandeSearchTerm] = useState('');
   const [specialPersonName, setSpecialPersonName] = useState('');
-  const [pokerActivePerson, setPokerActivePerson] = useState('');
-  const [pokerPeople, setPokerPeople] = useState<string[]>([]);
-  const [pokerOrders, setPokerOrders] = useState<Record<string, BarCommande['items']>>({});
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [pendingDeleteOrder, setPendingDeleteOrder] = useState<BarCommande | null>(null);
@@ -141,9 +137,6 @@ export const BarCommandeView: React.FC<Props> = ({
     setSelectedItems([]);
     setSearchTerm('');
     setSpecialPersonName('');
-    setPokerActivePerson('');
-    setPokerPeople([]);
-    setPokerOrders({});
     setFeedback(null);
     setIsEditingOrder(false);
     setEditingOrderId(null);
@@ -218,9 +211,6 @@ export const BarCommandeView: React.FC<Props> = ({
     setSelectedItems([]);
     setSearchTerm('');
     setSpecialPersonName('');
-    setPokerActivePerson('');
-    setPokerPeople([]);
-    setPokerOrders({});
     setFeedback(null);
     setIsEditingOrder(false);
     setEditingOrderId(null);
@@ -240,7 +230,7 @@ export const BarCommandeView: React.FC<Props> = ({
     if (location.label === 'Chambre') {
       void loadChamberReservationOptions();
       setMoyenPaiement('CREDIT');
-    } else if (location.label === 'Gratuit' || location.label === 'Pocker gratuit') {
+    } else if (location.label === 'Gratuit') {
       setMoyenPaiement('GRATUIT');
       setChamberReservationOptions([]);
       setChamberReservationSearch('');
@@ -253,17 +243,15 @@ export const BarCommandeView: React.FC<Props> = ({
 
   const handleOpenEditModal = (commande: BarCommande) => {
     const specialMode = commande.observation?.trim().toUpperCase();
-    const isPoker = specialMode === 'POCKER' || specialMode === 'POKER' || specialMode === 'POCKER GRATUIT' || specialMode === 'POKER GRATUIT';
     const isChambre = specialMode === 'CHAMBRE' || Boolean(commande.hotel_reservation_id) || Boolean(commande.room_id) || (commande.table === 0 && commande.moyen_paiement === 'CREDIT');
-    const isGratuit = specialMode === 'GRATUIT' || (commande.table === 0 && commande.moyen_paiement === 'GRATUIT');
+    // Les anciennes commandes « Poker gratuit » (POCKER) sont reprises en mode Gratuit.
+    const isGratuit = specialMode === 'GRATUIT' || Boolean(specialMode?.includes('POCKER') || specialMode?.includes('POKER')) || (commande.table === 0 && commande.moyen_paiement === 'GRATUIT');
 
-    const location: OrderLocationOption = isPoker
-      ? { kind: 'special' as const, label: 'Pocker gratuit', tableId: 0 }
-      : isChambre
-        ? { kind: 'special' as const, label: 'Chambre', tableId: 0 }
-        : isGratuit
-          ? { kind: 'special' as const, label: 'Gratuit', tableId: 0 }
-          : { kind: 'table' as const, label: `T${commande.table}`, tableId: commande.table };
+    const location: OrderLocationOption = isChambre
+      ? { kind: 'special' as const, label: 'Chambre', tableId: 0 }
+      : isGratuit
+        ? { kind: 'special' as const, label: 'Gratuit', tableId: 0 }
+        : { kind: 'table' as const, label: `T${commande.table}`, tableId: commande.table };
     const chamberGuest = location.label === 'Chambre' ? String(commande.client || '') : '';
     const chamberParts = chamberGuest ? chamberGuest.split(/\s*—\s*/) : ['', ''];
     const chamberName = chamberParts[0]?.trim() || chamberGuest;
@@ -271,16 +259,13 @@ export const BarCommandeView: React.FC<Props> = ({
     setClient(commande.client);
     setTable(String(commande.table));
     setNombrePersonnes(String(commande.nombre_personnes || 1));
-    setMoyenPaiement(commande.moyen_paiement || (isGratuit || isPoker ? 'GRATUIT' : isChambre ? 'CREDIT' : 'ESPECES'));
+    setMoyenPaiement(commande.moyen_paiement || (isGratuit ? 'GRATUIT' : isChambre ? 'CREDIT' : 'ESPECES'));
     setSelectedItems(commande.items.map((item) => ({ ...item })));
     setSearchTerm('');
     setSelectedLocation(location);
     setSpecialPersonName(location.kind === 'special' ? chamberName : '');
     setSelectedChamberRoomLabel(location.label === 'Chambre' ? chamberRoom : '');
     setChamberReservationSearch(location.label === 'Chambre' ? chamberName : '');
-    setPokerActivePerson(location.label === 'Pocker gratuit' ? commande.client : '');
-    setPokerPeople(location.label === 'Pocker gratuit' ? [commande.client] : []);
-    setPokerOrders(location.label === 'Pocker gratuit' ? { [commande.client]: commande.items.map((item) => ({ ...item })) } : {});
     setFeedback(null);
     setIsEditingOrder(true);
     setEditingOrderId(commande.id);
@@ -338,9 +323,8 @@ export const BarCommandeView: React.FC<Props> = ({
     setSelectedItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
   };
 
-  const isPokerLocation = selectedLocation?.label === 'Pocker gratuit' || selectedLocation?.label?.toUpperCase().includes('POKER') || selectedLocation?.label?.toUpperCase().includes('POCKER');
   const isNamedLocation = selectedLocation?.kind === 'special';
-  const isGratuitLocation = selectedLocation?.label === 'Gratuit' || (selectedLocation?.kind === 'special' && selectedLocation?.label?.toUpperCase().includes('GRATUIT') && !isPokerLocation);
+  const isGratuitLocation = selectedLocation?.label === 'Gratuit' || (selectedLocation?.kind === 'special' && selectedLocation?.label?.toUpperCase().includes('GRATUIT'));
   const isChambreLocation = selectedLocation?.label === 'Chambre' || (selectedLocation?.kind === 'special' && selectedLocation?.label?.toUpperCase().includes('CHAMBRE'));
 
   const getSelectedLocationInfo = () => {
@@ -348,8 +332,7 @@ export const BarCommandeView: React.FC<Props> = ({
     const upperLabel = rawLabel.toUpperCase();
 
     const isChambre = isChambreLocation || upperLabel === 'CHAMBRE' || (selectedLocation?.kind === 'special' && upperLabel.includes('CHAMBRE'));
-    const isPoker = isPokerLocation || upperLabel === 'POCKER GRATUIT' || upperLabel === 'POKER GRATUIT' || upperLabel === 'POKER' || upperLabel === 'POCKER';
-    const isGratuit = isGratuitLocation || upperLabel === 'GRATUIT' || (selectedLocation?.kind === 'special' && upperLabel.includes('GRATUIT') && !isPoker);
+    const isGratuit = isGratuitLocation || upperLabel === 'GRATUIT' || (selectedLocation?.kind === 'special' && upperLabel.includes('GRATUIT'));
 
     if (isGratuit) {
       return {
@@ -362,20 +345,6 @@ export const BarCommandeView: React.FC<Props> = ({
         cardBorder: 'border-emerald-500/40 bg-emerald-500/10',
         textColor: 'text-emerald-400',
         icon: Gift,
-      };
-    }
-
-    if (isPoker) {
-      return {
-        type: 'POKER' as const,
-        badgeLabel: 'POKER GRATUIT',
-        title: 'POKER GRATUIT',
-        subtitle: 'Table Poker · Boissons et consommations offertes aux joueurs',
-        badgeBg: 'bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.35)]',
-        badgeBorder: 'border-purple-400',
-        cardBorder: 'border-purple-500/40 bg-purple-500/10',
-        textColor: 'text-purple-300',
-        icon: Dices,
       };
     }
 
@@ -427,37 +396,6 @@ export const BarCommandeView: React.FC<Props> = ({
     setShowChamberSuggestions(false);
   };
 
-  const handleSelectPokerPerson = (name: string) => {
-    const currentName = pokerActivePerson.trim();
-    if (currentName && currentName !== name) {
-      setPokerOrders((prev) => ({ ...prev, [currentName]: selectedItems }));
-    }
-    setSpecialPersonName(name);
-    setPokerActivePerson(name);
-    setSelectedItems(pokerOrders[name] || []);
-    setFeedback(null);
-  };
-
-  const handleAddPokerPerson = () => {
-    const name = specialPersonName.trim();
-    if (!name) {
-      setFeedback({ type: 'error', message: 'Saisissez le nom de la personne.' });
-      return;
-    }
-
-    const currentName = pokerActivePerson.trim();
-    setPokerOrders((prev) => ({
-      ...prev,
-      ...(currentName && currentName !== name ? { [currentName]: selectedItems } : {}),
-      [name]: prev[name] || [],
-    }));
-    setPokerPeople((prev) => (prev.includes(name) ? prev : [...prev, name]));
-    setSpecialPersonName(name);
-    setPokerActivePerson(name);
-    setSelectedItems(pokerOrders[name] || []);
-    setFeedback(null);
-  };
-
   const handleAjouterCommande = async (event: React.FormEvent) => {
     event.preventDefault();
     const rawPersonName = isNamedLocation ? specialPersonName.trim() : client.trim() || 'Client anonyme';
@@ -505,7 +443,7 @@ export const BarCommandeView: React.FC<Props> = ({
           nombre_personnes: guestCount,
           moyen_paiement: effectivePaymentMethod,
           items: selectedItems,
-          observation: selectedLocation?.kind === 'special' ? selectedLocation.label === 'Pocker gratuit' ? 'POCKER' : selectedLocation.label.toUpperCase() : undefined,
+          observation: selectedLocation?.kind === 'special' ? selectedLocation.label.toUpperCase() : undefined,
           hotel_reservation_id: linkedReservation?.reservationId ?? null,
           room_id: linkedReservation ? Number(linkedReservation.roomLabel.replace(/\D/g, '')) || null : null,
           room_guest_name: selectedLocation?.label === 'Chambre' ? rawPersonName : null,
@@ -518,7 +456,7 @@ export const BarCommandeView: React.FC<Props> = ({
           nombre_personnes: guestCount,
           moyen_paiement: effectivePaymentMethod,
           items: selectedItems,
-          observation: selectedLocation?.kind === 'special' ? selectedLocation.label === 'Pocker gratuit' ? 'POCKER' : selectedLocation.label.toUpperCase() : undefined,
+          observation: selectedLocation?.kind === 'special' ? selectedLocation.label.toUpperCase() : undefined,
           hotel_reservation_id: linkedReservation?.reservationId ?? null,
           room_id: linkedReservation ? Number(linkedReservation.roomLabel.replace(/\D/g, '')) || null : null,
           room_guest_name: selectedLocation?.label === 'Chambre' ? rawPersonName : null,
@@ -991,27 +929,6 @@ export const BarCommandeView: React.FC<Props> = ({
                         </button>
                       ))}
                     </div>
-                  )}
-                </div>
-              ) : isPokerLocation ? (
-                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                  <Input
-                    label="Nom de la personne (Joueur Poker)"
-                    value={specialPersonName}
-                    onChange={(event) => setSpecialPersonName(event.target.value)}
-                    placeholder="Ex. Théophile"
-                  />
-                  <Button type="button" onClick={handleAddPokerPerson} className="w-full sm:w-auto">
-                    Ajouter
-                  </Button>
-                  {pokerPeople.length > 0 && (
-                    <Select
-                      label="Personne active"
-                      value={specialPersonName}
-                      onChange={(event) => handleSelectPokerPerson(event.target.value)}
-                      options={pokerPeople.map((name) => ({ value: name, label: name }))}
-                      className="sm:col-span-2"
-                    />
                   )}
                 </div>
               ) : (

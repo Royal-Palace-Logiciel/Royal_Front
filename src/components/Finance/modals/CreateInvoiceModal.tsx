@@ -121,7 +121,6 @@ export const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
         prenom: quickClientData.prenom.trim() || undefined,
         telephone: quickClientData.telephone.trim() || undefined,
         statut: 'ACTIF',
-        is_casino_player: false,
       });
 
       toast.success('Client créé avec succès');

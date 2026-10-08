@@ -11,7 +11,6 @@ export const UserRole = {
   CASHIER: "caisse",
   WAITER: "water",
   HOUSEKEEPING: "housekeeping",
-  CROUPIER: "croupier",
   HOSTESS: "hotesse",
 } as const;
 

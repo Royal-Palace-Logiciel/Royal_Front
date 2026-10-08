@@ -161,8 +161,8 @@ export const RestaurantPage: React.FC = () => {
 
   const getRestaurantLocationLabel = (location?: string) => {
     const normalized = location?.trim().toUpperCase();
-    if (normalized === 'POCKER GRATUIT' || normalized === 'GRATUIT POCKER' || normalized === 'POCKER') return 'Pocker gratuit';
-    if (normalized === 'GRATUIT') return 'Gratuit';
+    // Les anciennes commandes « Pocker gratuit » sont reprises en mode Gratuit.
+    if (normalized === 'GRATUIT' || normalized?.includes('POCKER')) return 'Gratuit';
     if (normalized === 'CHAMBRE') return 'Chambre';
     return undefined;
   };
@@ -360,7 +360,7 @@ export const RestaurantPage: React.FC = () => {
           return `<div class="line"><div class="row"><span>${quantity} x ${escapeHtml(item.product_nom || `#${item.product_id || ''}`)}${item.cuisson ? ` (${escapeHtml(item.cuisson)})` : ''}</span><span>${escapeHtml(formatCurrency(quantity * unitPrice))}</span></div><div class="sub">PU ${escapeHtml(formatCurrency(unitPrice))}</div></div>`;
         }).join('');
         printThermal(`Facture #${numericId}`, `
-          ${thermalHeader(`Facture #${numericId}`, ["Hotel de L'avenue — Restaurant"])}
+          ${thermalHeader(`Facture #${numericId}`, ["Royal Palace — Restaurant"])}
           <p>Date : ${escapeHtml(order.created_at ? new Date(order.created_at).toLocaleString('fr-FR') : '—')}</p>
           ${order.table_numero ? `<p>Table : ${escapeHtml(order.table_numero)}</p>` : ''}
           ${clientName ? `<p>Client : ${escapeHtml(clientName)}</p>` : ''}
@@ -690,7 +690,7 @@ export const RestaurantPage: React.FC = () => {
               </button>
             ))}
             {tables.length === 0 && <p className="col-span-4 py-6 text-center text-xs text-muted">Aucune table disponible.</p>}
-            {['Gratuit', 'Pocker gratuit', 'Chambre'].map((label) => (
+            {['Gratuit', 'Chambre'].map((label) => (
               <button
                 key={label}
                 type="button"
