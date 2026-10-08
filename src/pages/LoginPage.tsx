@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
-import logo from '../assets/logo_s.png';
+import logo from '../assets/logo_n.png';
 import AuthService from '../services/authService';
 
 interface LoginFormData {
@@ -285,10 +285,10 @@ export const LoginPage: React.FC = () => {
       <div className="relative z-10 w-full max-w-md animate-fade-in">
         {/* Logo et titre */}
         <div className="text-center mb-8">
-          <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+          <div className="w-60 h-28 mx-auto mb-4 flex items-center justify-center">
             <img 
               src={logo} 
-              alt="HDA Logo" 
+              alt="Royal Palace" 
               className="w-full h-full object-contain drop-shadow-lg hover:scale-105 transition-transform duration-500"
             />
           </div>

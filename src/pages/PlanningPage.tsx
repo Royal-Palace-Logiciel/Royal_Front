@@ -8,12 +8,12 @@ import { exportWeeklyPlanningPdf } from '../utils/planningPdf';
 import { exportWeeklyPlanningJpg } from '../utils/planningJpg';
 
 const categories: Array<{ name: string; icon: LucideIcon; description: string; prefix: string; color: string }> = [
-  { name: 'Videur', icon: ShieldCheck, description: 'Équipe de sécurité', prefix: 'V', color: '#ff6b00' },
-  { name: 'Femme de ménage', icon: Sparkles, description: 'Personnel d’entretien', prefix: 'F', color: '#ff9f1c' },
-  { name: 'Agents d’accueil', icon: ContactRound, description: 'Accueil et réception', prefix: 'A', color: '#ff355e' },
-  { name: 'Bar', icon: Wine, description: 'Équipe du bar', prefix: 'B', color: '#39ff14' },
-  { name: 'Restaurant', icon: UtensilsCrossed, description: 'Équipe de restauration', prefix: 'R', color: '#00e5ff' },
-  { name: 'Poker', icon: Dices, description: 'Équipe poker', prefix: 'P', color: '#4d7dff' },
+  { name: 'Videur', icon: ShieldCheck, description: 'Équipe de sécurité', prefix: 'V', color: '#ea580c' },
+  { name: 'Femme de ménage', icon: Sparkles, description: 'Personnel d’entretien', prefix: 'F', color: '#d97706' },
+  { name: 'Agents d’accueil', icon: ContactRound, description: 'Accueil et réception', prefix: 'A', color: '#e11d48' },
+  { name: 'Bar', icon: Wine, description: 'Équipe du bar', prefix: 'B', color: '#16a34a' },
+  { name: 'Restaurant', icon: UtensilsCrossed, description: 'Équipe de restauration', prefix: 'R', color: '#0891b2' },
+  { name: 'Poker', icon: Dices, description: 'Équipe poker', prefix: 'P', color: '#2563eb' },
 ];
 
 const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

@@ -91,8 +91,8 @@ export const IdentityVerificationModal: React.FC<IdentityVerificationModalProps>
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-muted">Type de pièce d'identité</span>
-            <select className={casinoInput} value={idType} onChange={(event) => setIdType(event.target.value)} style={{ color: '#fff', backgroundColor: 'var(--color-surface)' }}>
-              {ID_TYPES.map((type) => <option key={type} value={type} style={{ color: '#fff', backgroundColor: 'var(--color-surface)' }}>{type}</option>)}
+            <select className={casinoInput} value={idType} onChange={(event) => setIdType(event.target.value)} style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-surface)' }}>
+              {ID_TYPES.map((type) => <option key={type} value={type} style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-surface)' }}>{type}</option>)}
             </select>
           </label>
           <label className="flex flex-col gap-1">

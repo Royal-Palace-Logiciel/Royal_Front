@@ -876,7 +876,7 @@ export const FinancesPage: React.FC = () => {
           <h3 className="text-primary font-semibold mb-6">Entrées vs Sorties par Module</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={barData} barSize={20}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e4e7ec" vertical={false} />
               <XAxis dataKey="name" tick={{ fill: '#aaaaaa', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#aaaaaa', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k MGA`} />
               <Tooltip content={<CustomTooltip />} />

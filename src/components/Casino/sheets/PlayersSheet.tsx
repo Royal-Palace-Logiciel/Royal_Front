@@ -286,7 +286,7 @@ export const PlayersSheet: React.FC<PlayersSheetProps> = ({ date, players, regis
     // html2canvas-pro : comprend les couleurs oklch() de Tailwind v4, que html2canvas ne sait pas lire.
     const { default: html2canvas } = await import('html2canvas-pro');
     return html2canvas(printArea, {
-      backgroundColor: '#161616',
+      backgroundColor: '#ffffff',
       scale: Math.min(window.devicePixelRatio || 1, 2),
       useCORS: true,
       onclone: (clonedDocument) => {
@@ -596,12 +596,12 @@ export const PlayersSheet: React.FC<PlayersSheetProps> = ({ date, players, regis
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
         <label htmlFor="player-to-print" className="font-semibold">Fiche joueur :</label>
         {!activePlayers.length ? (
-          <select id="player-to-print" value={0} className="w-full rounded border bg-transparent px-2 py-1 text-white sm:w-auto" style={{ ...casinoBorder, color: '#fff', backgroundColor: 'var(--color-surface)' }} disabled>
+          <select id="player-to-print" value={0} className="w-full rounded border bg-transparent px-2 py-1 text-white sm:w-auto" style={{ ...casinoBorder, color: 'var(--color-primary)', backgroundColor: 'var(--color-surface)' }} disabled>
             <option value={0} aria-label="Aucun joueur en jeu" />
           </select>
         ) : <>
-        <select id="player-to-print" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(Number(event.target.value))} className="w-full rounded border bg-transparent px-2 py-1 text-white sm:w-auto" style={{ ...casinoBorder, color: '#fff', backgroundColor: 'var(--color-surface)' }} disabled={!players.length}>
-          {activePlayers.map((player, index) => <option key={player.ficheId ?? player.id} value={player.ficheId ?? player.id} className="text-white" style={{ color: '#fff', backgroundColor: 'var(--color-surface)' }}>Fiche {index + 1} — {getPlayerDisplayName(player)}</option>)}
+        <select id="player-to-print" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(Number(event.target.value))} className="w-full rounded border bg-transparent px-2 py-1 text-white sm:w-auto" style={{ ...casinoBorder, color: 'var(--color-primary)', backgroundColor: 'var(--color-surface)' }} disabled={!players.length}>
+          {activePlayers.map((player, index) => <option key={player.ficheId ?? player.id} value={player.ficheId ?? player.id} className="text-white" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-surface)' }}>Fiche {index + 1} — {getPlayerDisplayName(player)}</option>)}
         </select>
         </>}
       </div>
@@ -663,7 +663,7 @@ export const PlayersSheet: React.FC<PlayersSheetProps> = ({ date, players, regis
               <td className="border" style={casinoBorder}><input className={paperInput} value={isEmptyCaveLine ? '' : accumulatedByLineId[line.id] || '0'} readOnly /></td>
               <td className="border text-center" style={casinoBorder}><input type="radio" name={`payment-${line.id}`} checked={line.payment === 'Payé'} onChange={() => onUpdate(line.id, 'payment', 'Payé')} disabled={!isAdmin} /></td>
               <td className="border text-center" style={casinoBorder}><input type="radio" name={`payment-${line.id}`} checked={line.payment === 'Non payé'} onChange={() => onUpdate(line.id, 'payment', 'Non payé')} disabled={!isAdmin} /></td>
-              <td className="border" style={casinoBorder}><select className={paperInput} value={line.paymentMethod || ''} onChange={(event) => onUpdate(line.id, 'paymentMethod', event.target.value)} style={{ color: '#fff', backgroundColor: 'var(--color-surface)' }} disabled={!isAdmin}><option value="" className="text-white" style={{ color: '#fff', backgroundColor: 'var(--color-surface)' }}>Sélectionner</option>{paymentMethods.map((method) => <option key={method} value={method} className="text-white" style={{ color: '#fff', backgroundColor: 'var(--color-surface)' }}>{method}</option>)}</select></td>
+              <td className="border" style={casinoBorder}><select className={paperInput} value={line.paymentMethod || ''} onChange={(event) => onUpdate(line.id, 'paymentMethod', event.target.value)} style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-surface)' }} disabled={!isAdmin}><option value="" className="text-white" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-surface)' }}>Sélectionner</option>{paymentMethods.map((method) => <option key={method} value={method} className="text-white" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-surface)' }}>{method}</option>)}</select></td>
               <td className="border p-1" style={casinoBorder}>
                 <button type="button" className="flex min-h-14 w-full items-center justify-center rounded border border-dashed px-1 text-[10px] text-yellow-200 transition hover:border-yellow-300 hover:bg-yellow-300/10 disabled:cursor-not-allowed disabled:opacity-60" style={casinoBorder} onClick={() => setLineSignatureModal({ id: line.id, name: getPlayerDisplayName(line), value: line.signature || '', field: 'signature' })} disabled={!isAdmin} aria-label={`Signer pour ${getPlayerDisplayName(line)}`}>
                   {line.signature ? <img src={line.signature} alt="Signature du joueur" className="max-h-12 max-w-full object-contain" style={{ filter: 'invert(1)' }} /> : 'Cliquer pour signer'}

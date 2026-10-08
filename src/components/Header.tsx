@@ -6,7 +6,7 @@ import AuthService from '../services/authService'; // ← Import du service
 import api from '../lib/api';
 import { useHDA } from '../context/HDAContext'; // Gardé uniquement pour les notifications
 import { generateNotifications } from '../services/notificationService';
-import logo from '../assets/logo_s.png';
+import logo from '../assets/logo_n.png';
 
 const ROUTE_LABELS: Record<string, string> = {
   '/dashboard': 'Tableau de Bord',
@@ -174,7 +174,7 @@ export const Header: React.FC = () => {
         >
           <img
             src={logo}
-            alt="HDA"
+            alt="Royal Palace"
             style={{
               width: '100%',
               height: '100%',
