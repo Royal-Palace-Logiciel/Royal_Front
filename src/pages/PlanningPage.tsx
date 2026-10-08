@@ -13,10 +13,6 @@ const categories: Array<{ name: string; icon: LucideIcon; description: string; p
   { name: 'Agents d’accueil', icon: ContactRound, description: 'Accueil et réception', prefix: 'A', color: '#e11d48' },
   { name: 'Bar', icon: Wine, description: 'Équipe du bar', prefix: 'B', color: '#16a34a' },
   { name: 'Restaurant', icon: UtensilsCrossed, description: 'Équipe de restauration', prefix: 'R', color: '#0891b2' },
-<<<<<<< HEAD
-  { name: 'Poker', icon: Dices, description: 'Équipe poker', prefix: 'P', color: '#2563eb' },
-=======
->>>>>>> 23cc680d229a17b7bbfdf34ffbb04a12ee48f0cc
 ];
 
 const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

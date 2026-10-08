@@ -30,17 +30,10 @@ const navItems: NavItem[] = [
   { id: 'hotel', label: 'Hôtel', icon: <Hotel size={20} />, iconColor: '#d97706', gradient: 'from-accent to-accent-2', path: "/hotel", roles: ['admin', 'manager', 'receptioniste', 'housekeeping', 'caisse', 'caissier', 'stock_manager'] },
   { id: 'restaurant', label: 'Restaurant', icon: <UtensilsCrossed size={20} />, iconColor: '#e11d48', gradient: 'from-accent to-accent-2', path: "/restaurant", roles: ['admin', 'manager', 'receptioniste', 'caisse', 'caissier', 'stock_manager'] },
   { id: 'bar', label: 'Bar & Lounge', icon: <Wine size={20} />, iconColor: '#16a34a', gradient: 'from-accent to-accent-2', path: "/bar", roles: ['admin', 'manager', 'water', 'barman', 'hotesse', 'receptioniste', 'caissier', 'caisse', 'stock_manager'] },
-<<<<<<< HEAD
-  // { id: 'alcool', label: 'Alcool', icon: <Martini size={20} />, gradient: 'from-amber-500 to-orange-500', path: "/alcool", roles: ['admin', 'manager', 'water', 'caissier', 'caisse', 'stock_manager'] },
-  { id: 'casino', label: 'Casino', icon: <Dices size={20} />, iconColor: '#0891b2', gradient: 'from-accent to-accent-2', path: "/casino", roles: ['admin', 'manager', 'caisse', 'caissier', 'croupier'] },
-  { id: 'finances', label: 'Finances', icon: <DollarSign size={20} />, iconColor: '#a87b22', gradient: 'from-accent to-accent-2', path: "/finances", roles: ['admin', 'manager', 'caisse', 'caissier'] },
-  { id: 'rh', label: 'Ressources humaines', icon: <UsersRound size={20} />, iconColor: '#c026d3', gradient: 'from-accent to-accent-2', path: "/rh", roles: ['admin', 'manager', 'receptioniste', 'housekeeping', 'caisse', 'caissier', 'water', 'barman', 'croupier'] },
-=======
   { id: 'spa', label: 'SPA — Piscine', icon: <Waves size={20} />, iconColor: '#0891b2', gradient: 'from-accent to-accent-2', path: "/spa", roles: ['admin', 'manager', 'caisse', 'caissier'] },
   // { id: 'alcool', label: 'Alcool', icon: <Martini size={20} />, gradient: 'from-amber-500 to-orange-500', path: "/alcool", roles: ['admin', 'manager', 'water', 'caissier', 'caisse', 'stock_manager'] },
   { id: 'finances', label: 'Finances', icon: <DollarSign size={20} />, iconColor: '#a87b22', gradient: 'from-accent to-accent-2', path: "/finances", roles: ['admin', 'manager', 'caisse', 'caissier'] },
   { id: 'rh', label: 'Ressources humaines', icon: <UsersRound size={20} />, iconColor: '#c026d3', gradient: 'from-accent to-accent-2', path: "/rh", roles: ['admin', 'manager', 'receptioniste', 'housekeeping', 'caisse', 'caissier', 'water', 'barman'] },
->>>>>>> 23cc680d229a17b7bbfdf34ffbb04a12ee48f0cc
   { id: 'planning', label: 'Planning', icon: <CalendarDays size={20} />, iconColor: '#2563eb', gradient: 'from-accent to-accent-2', path: "/planning", roles: ['admin', 'manager'] },
   { id: 'clients', label: 'Clients', icon: <UserRoundPlus size={20} />, iconColor: '#65a30d', gradient: 'from-accent to-accent-2', path: "/clients", roles: ['admin', 'manager', 'receptioniste', 'caisse', 'caissier'] },
   { id: 'utilisateurs', label: 'Utilisateurs', icon: <UserCog size={20} />, iconColor: '#9333ea', gradient: 'from-accent to-accent-2', path: "/utilisateurs", roles: ['admin'] },
