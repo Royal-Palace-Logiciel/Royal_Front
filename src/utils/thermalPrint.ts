@@ -41,12 +41,12 @@ export const THERMAL_BASE_CSS = `
   pre.report { margin: 0; white-space: pre-wrap; font-family: Arial, Helvetica, sans-serif; font-size: 12px; line-height: 1.4; }
 `;
 
-export const THERMAL_LOGO = '/logo_s.png';
+export const THERMAL_LOGO = '/logo_n.png';
 
 // En-tête standard des tickets (logo + titre + date d'impression).
 export const thermalHeader = (title: string, lines: string[] = []) => `
   <div class="header">
-    <img class="logo" src="${THERMAL_LOGO}" alt="HDA" />
+    <img class="logo" src="${THERMAL_LOGO}" alt="Royal Palace" />
     <h1>${escapeHtml(title)}</h1>
     ${lines.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}
     <p class="muted">Imprimé le ${escapeHtml(new Date().toLocaleString('fr-FR'))}</p>

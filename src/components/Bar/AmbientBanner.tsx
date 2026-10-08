@@ -8,7 +8,7 @@ export const AmbientBanner: React.FC = () => (
         <Music size={24} className="text-black" />
       </div>
       <div>
-        <h3 className="text-primary font-semibold">HDA Lounge — Ambiance Jazz Live</h3>
+        <h3 className="text-primary font-semibold">Royal Palace Lounge — Ambiance Jazz Live</h3>
         <p className="text-muted text-sm">Ouvert de 17h à 2h • DJ & Artistes live le week-end</p>
       </div>
       <div className="ml-auto hidden md:flex items-center gap-2 text-accent">

@@ -105,7 +105,6 @@ const ClientsPage: React.FC = () => {
     type_piece: '',
     numero_piece: '',
     statut: 'ACTIF',
-    is_casino_player: false,
     code_client: ''
   };
   
@@ -455,7 +454,6 @@ const ClientsPage: React.FC = () => {
       type_piece: client.type_piece || '',
       numero_piece: client.numero_piece || '',
       statut: client.statut || 'ACTIF',
-      is_casino_player: client.is_casino_player || false,
     });
     setFormErrors({});
     setClientSignature(null);
@@ -480,7 +478,7 @@ const ClientsPage: React.FC = () => {
     setIsProcessing(true);
     try {
       const result = await deleteClient(clientToDelete.id);
-      // Client avec historique (séjours, commandes, casino, paiements…) : retiré de la
+      // Client avec historique (séjours, commandes, paiements…) : retiré de la
       // liste sans changer son statut, historique conservé. Sinon : effacé.
       toast.success(result?.archived
         ? `Client supprimé de la liste. Son historique (${result.relatedCount ?? 'plusieurs'} enregistrement(s)) est conservé.`
@@ -796,7 +794,6 @@ const ClientsPage: React.FC = () => {
     actifs: clients.filter(c => c.statut === 'ACTIF').length,
     inactifs: clients.filter(c => c.statut === 'INACTIF').length,
     blocked: clients.filter(c => c.statut === 'BLOCKED').length,
-    casino: clients.filter(c => c.is_casino_player).length,
   };
 
   // Affichage du chargement
@@ -856,7 +853,7 @@ const ClientsPage: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-surface border border-base rounded-xl p-4 text-center">
           <p className="text-muted text-xs mb-1">Total</p>
           <p className="text-primary font-bold text-xl">{stats.total}</p>
@@ -872,10 +869,6 @@ const ClientsPage: React.FC = () => {
         <div className="bg-danger/5 border border-danger/20 rounded-xl p-4 text-center">
           <p className="text-muted text-xs mb-1">Bloqués</p>
           <p className="text-danger font-bold text-xl">{stats.blocked}</p>
-        </div>
-        <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center">
-          <p className="text-muted text-xs mb-1">🎰 Casino</p>
-          <p className="text-accent font-bold text-xl">{stats.casino}</p>
         </div>
       </div>
 
@@ -1381,9 +1374,9 @@ const ClientsPage: React.FC = () => {
                       </label>
                     </div>
 
-                    {/* 7. Validation du casino */}
+                    {/* 7. Validation */}
                     <div className="space-y-3">
-                      <h5 className="text-sm font-semibold text-accent uppercase tracking-wide">7. Validation du casino</h5>
+                      <h5 className="text-sm font-semibold text-accent uppercase tracking-wide">7. Validation</h5>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-primary mb-1">Agent responsable (ID)</label>
@@ -1538,11 +1531,6 @@ const ClientsPage: React.FC = () => {
                         {selectedClient.type_piece} - {selectedClient.numero_piece || 'N/A'}
                       </p>
                     )}
-                    {selectedClient.is_casino_player && (
-                      <p className="flex items-center gap-2 text-accent">
-                        🎰 Joueur de casino
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1680,9 +1668,9 @@ const ClientsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Validation du casino */}
+                    {/* Validation */}
                     <div className="bg-surface-2 rounded-lg p-4">
-                      <h6 className="text-sm font-semibold text-accent mb-2">Validation du casino</h6>
+                      <h6 className="text-sm font-semibold text-accent mb-2">Validation</h6>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                         {viewKycData.agent_verificateur && (
                           <p className="text-secondary">
@@ -1800,7 +1788,7 @@ const ClientsPage: React.FC = () => {
                 Êtes-vous sûr de vouloir supprimer le client <strong>{clientToDelete.nom} {clientToDelete.prenom || ''}</strong> ?
               </p>
               <p className="text-sm text-danger mb-6">
-                ⚠️ Le client sera retiré de la liste et des recherches. S’il a un historique (séjours, commandes, casino, paiements…), cet historique est conservé.
+                ⚠️ Le client sera retiré de la liste et des recherches. S’il a un historique (séjours, commandes, paiements…), cet historique est conservé.
               </p>
               <div className="flex justify-end gap-3">
                 <button

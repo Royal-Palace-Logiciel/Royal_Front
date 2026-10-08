@@ -219,7 +219,6 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
     numero_piece: '',
     code_client: '',
     statut: 'ACTIF',
-    is_casino_player: false,
   };
   const [quickClientData, setQuickClientData] = useState<ClientFormData>(emptyQuickClientData);
   const [quickClientErrors, setQuickClientErrors] = useState<Record<string, string>>({});
@@ -660,9 +659,6 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                     )}
                     {selectedClient.email && (
                       <span>✉️ {selectedClient.email}</span>
-                    )}
-                    {selectedClient.is_casino_player && (
-                      <span className="text-accent">🎰 Joueur Casino</span>
                     )}
                   </div>
                 </div>

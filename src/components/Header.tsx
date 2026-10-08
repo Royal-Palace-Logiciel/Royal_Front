@@ -6,7 +6,7 @@ import AuthService from '../services/authService'; // ← Import du service
 import api from '../lib/api';
 import { useHDA } from '../context/HDAContext'; // Gardé uniquement pour les notifications
 import { generateNotifications } from '../services/notificationService';
-import logo from '../assets/logo_s.png';
+import logo from '../assets/logo_n.png';
 
 const ROUTE_LABELS: Record<string, string> = {
   '/dashboard': 'Tableau de Bord',
@@ -15,7 +15,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/restaurant': 'Restaurant',
   '/bar': 'Bar & Lounge',
   '/alcool': 'Alcool',
-  '/casino': 'Casino',
+  '/spa': 'SPA — Piscine',
   '/planning': 'Planning',
   '/finances': 'Finances',
   '/clients': 'Clients',
@@ -174,7 +174,7 @@ export const Header: React.FC = () => {
         >
           <img
             src={logo}
-            alt="HDA"
+            alt="Royal Palace"
             style={{
               width: '100%',
               height: '100%',
@@ -183,7 +183,7 @@ export const Header: React.FC = () => {
             }}
           />
         </div>
-        <span className="text-muted text-xs hidden sm:block flex-shrink-0">HDA</span>
+        <span className="text-muted text-xs hidden sm:block flex-shrink-0">Royal Palace</span>
         <ChevronRight size={12} className="text-subtle hidden sm:block flex-shrink-0" />
         <span className="text-primary font-semibold text-sm truncate">
           {currentPage}

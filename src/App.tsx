@@ -6,7 +6,7 @@ import ClientsPage from "./pages/ClientsPage";
 import { RestaurantPage } from "./pages/RestaurantPage";
 import { BarPage } from "./pages/BarPage";
 import { AlcoholPage } from "./pages/AlcoholPage";
-import { CasinoPage } from "./pages/CasinoPage";
+import { SpaPage } from "./pages/SpaPage";
 import { FinancesPage } from "./pages/FinancesPage";
 import { UtilisateursPage } from "./pages/UtilisateursPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -102,12 +102,12 @@ function App() {
               <Route
                 element={
                   <ProtectedRoute
-                    moduleId="casino"
-                    allowedRoles={['admin', 'manager', 'caisse', 'caissier', 'croupier']}
+                    moduleId="spa"
+                    allowedRoles={['admin', 'manager', 'caisse', 'caissier']}
                   />
                 }
               >
-                <Route path="/casino" element={<CasinoPage />} />
+                <Route path="/spa" element={<SpaPage />} />
               </Route>
 
               <Route

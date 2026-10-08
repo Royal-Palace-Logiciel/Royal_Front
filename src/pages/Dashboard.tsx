@@ -8,7 +8,7 @@ import api from '../lib/api';
 import {
   DollarSign, TrendingUp, TrendingDown, Package,
   AlertTriangle, Activity, Hotel,
-  UtensilsCrossed, Wine, Dices, ArrowUpRight, ArrowDownRight
+  UtensilsCrossed, Wine, Waves, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 
@@ -45,12 +45,12 @@ const normalizeModule = (module?: string) => {
 // Revenue data for dashboard charts - hébergement removed from display as module is disabled
 // Historical hébergement data is preserved in backend but not shown in UI
 const revenueData = [
-  { mois: 'Jan', hotel: 38000, restaurant: 28000, bar: 18000, casino: 95000 },
-  { mois: 'Fév', hotel: 42000, restaurant: 31000, bar: 22000, casino: 88000 },
-  { mois: 'Mar', hotel: 48000, restaurant: 35000, bar: 25000, casino: 112000 },
-  { mois: 'Avr', hotel: 55000, restaurant: 40000, bar: 28000, casino: 125000 },
-  { mois: 'Mai', hotel: 52000, restaurant: 38000, bar: 26000, casino: 108000 },
-  { mois: 'Jun', hotel: 68000, restaurant: 48000, bar: 34000, casino: 145000 },
+  { mois: 'Jan', hotel: 38000, restaurant: 28000, bar: 18000 },
+  { mois: 'Fév', hotel: 42000, restaurant: 31000, bar: 22000 },
+  { mois: 'Mar', hotel: 48000, restaurant: 35000, bar: 25000 },
+  { mois: 'Avr', hotel: 55000, restaurant: 40000, bar: 28000 },
+  { mois: 'Mai', hotel: 52000, restaurant: 38000, bar: 26000 },
+  { mois: 'Jun', hotel: 68000, restaurant: 48000, bar: 34000 },
 ];
 
 const COLORS = ['#d4a847', '#c4953a', '#e8c86a', '#f5e4a0'];
@@ -63,12 +63,10 @@ export const Dashboard: React.FC = () => {
     bar: ModuleStockItem[];
     restaurant: ModuleStockItem[];
     hotel: ModuleStockItem[];
-    casino: ModuleStockItem[];
   }>({
     bar: [],
     restaurant: [],
     hotel: [],
-    casino: [],
   });
 
   useEffect(() => {
@@ -139,7 +137,6 @@ export const Dashboard: React.FC = () => {
                 status: (h.quantite ?? 0) === 0 ? 'epuise' : (h.quantite ?? 0) <= (h.seuil_minimum ?? 5) ? 'faible' : 'disponible',
               }))
             : [],
-          casino: [],
         });
       } catch (err) {
         console.error('Erreur chargement stocks live:', err);
@@ -163,18 +160,16 @@ export const Dashboard: React.FC = () => {
   const hotel = moduleSummary('hotel');
   const restaurant = moduleSummary('restaurant');
   const bar = moduleSummary('bar');
-  const casino = moduleSummary('casino');
+  const spa = moduleSummary('spa');
 
   // ==================== SOURCES DE DONNÉES PAR MODULE ====================
   const contextBarItems = state.stockItems.filter(s => s.module === 'bar');
   const contextRestaurantItems = state.stockItems.filter(s => s.module === 'restaurant');
   const contextHotelItems = state.stockItems.filter(s => s.module === 'hotel' || s.module === 'hebergement');
-  const contextCasinoItems = state.stockItems.filter(s => s.module === 'casino');
 
   const barItems: (ModuleStockItem | StockItem)[] = liveStocks.bar.length > 0 ? liveStocks.bar : contextBarItems;
   const restaurantItems: (ModuleStockItem | StockItem)[] = liveStocks.restaurant.length > 0 ? liveStocks.restaurant : contextRestaurantItems;
   const hotelItems: (ModuleStockItem | StockItem)[] = liveStocks.hotel.length > 0 ? liveStocks.hotel : contextHotelItems;
-  const casinoItems: (ModuleStockItem | StockItem)[] = liveStocks.casino.length > 0 ? liveStocks.casino : contextCasinoItems;
 
   // ==================== FORMULE DE CALCUL DE LA VALEUR DU STOCK ====================
   // Pour chaque article : quantité restante (stock) * prix unitaire
@@ -191,13 +186,12 @@ export const Dashboard: React.FC = () => {
   const barStockValue = barItems.reduce((sum: number, item) => sum + calculateItemValue(item), 0);
   const restaurantStockValue = restaurantItems.reduce((sum: number, item) => sum + calculateItemValue(item), 0);
   const hotelStockValue = hotelItems.reduce((sum: number, item) => sum + calculateItemValue(item), 0);
-  const casinoStockValue = casinoItems.reduce((sum: number, item) => sum + calculateItemValue(item), 0);
 
   // Valeur totale globale du stock tous modules confondus
-  const totalStockValue = barStockValue + restaurantStockValue + hotelStockValue + casinoStockValue;
+  const totalStockValue = barStockValue + restaurantStockValue + hotelStockValue;
 
   // Liste consolidée pour les alertes de stock
-  const allStockItems: (ModuleStockItem | StockItem)[] = [...barItems, ...restaurantItems, ...hotelItems, ...casinoItems];
+  const allStockItems: (ModuleStockItem | StockItem)[] = [...barItems, ...restaurantItems, ...hotelItems];
   const stockAlerts = allStockItems.filter(s => s.status && s.status !== 'disponible').length;
   const displayAlertItems = allStockItems.filter(s => s.status && s.status !== 'disponible').slice(0, 6);
 
@@ -205,14 +199,14 @@ export const Dashboard: React.FC = () => {
     { name: 'Hôtel', value: hotel.entrees },
     { name: 'Restaurant', value: restaurant.entrees },
     { name: 'Bar', value: bar.entrees },
-    { name: 'Casino', value: casino.entrees },
+    { name: 'SPA', value: spa.entrees },
   ];
 
   const moduleCards = [
     { label: 'Hôtel', solde: hotel.solde, entrees: hotel.entrees, sorties: hotel.sorties, icon: <Hotel size={16} className="text-black" />, gradient: 'from-accent to-accent-2' },
     { label: 'Restaurant', solde: restaurant.solde, entrees: restaurant.entrees, sorties: restaurant.sorties, icon: <UtensilsCrossed size={16} className="text-black" />, gradient: 'from-accent to-accent-2' },
     { label: 'Bar & Lounge', solde: bar.solde, entrees: bar.entrees, sorties: bar.sorties, icon: <Wine size={16} className="text-black" />, gradient: 'from-accent to-accent-2' },
-    { label: 'Casino', solde: casino.solde, entrees: casino.entrees, sorties: casino.sorties, icon: <Dices size={16} className="text-black" />, gradient: 'from-accent to-accent-2' },
+    { label: 'SPA — Piscine', solde: spa.solde, entrees: spa.entrees, sorties: spa.sorties, icon: <Waves size={16} className="text-black" />, gradient: 'from-accent to-accent-2' },
   ];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -249,7 +243,7 @@ export const Dashboard: React.FC = () => {
           <h2 className="text-primary text-2xl font-bold" style={{ fontFamily: 'Playfair Display, serif' }}>
             Vue d'ensemble
           </h2>
-          <p className="text-muted text-sm mt-1">Performance globale de la plateforme HDA</p>
+          <p className="text-muted text-sm mt-1">Performance globale de la plateforme Royal Palace</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">

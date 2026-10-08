@@ -1,60 +1,139 @@
 @import "tailwindcss";
 
-/* ===== DESIGN TOKENS — Thème Noir dominant + Jaune Premium ===== */
+/* ===== DESIGN TOKENS — Thème Clair + Or Royal Palace ===== */
 :root {
-  /* Couleurs de fond — Noir profond */
-  --color-bg: #1b1d21;
-  /* fond général — noir profond */
-  --color-surface: #25282e;
-  /* cartes, sidebar, header — noir élégant */
-  --color-surface-2: #30343b;
+  color-scheme: light;
+
+  /* Couleurs de fond — Clair */
+  --color-bg: #f4f5f7;
+  /* fond général — gris très clair */
+  --color-surface: #ffffff;
+  /* cartes, sidebar, header — blanc */
+  --color-surface-2: #f0f2f5;
   /* fond secondaire, hover léger */
-  --color-surface-3: #3d424a;
-  /* hover actif, inputs — gris foncé */
+  --color-surface-3: #e4e7ec;
+  /* hover actif — gris clair */
 
-  /* Couleurs de texte — Blanc pur */
-  --color-primary: #ffffff;
-  /* titres, texte principal — blanc absolu */
-  --color-secondary: #e8e8e8;
-  /* texte secondaire — blanc cassé */
-  --color-muted: #aaaaaa;
-  /* texte désactivé, placeholders — gris clair */
-  --color-subtle: #777777;
-  /* hints, métadonnées — gris moyen */
+  /* Couleurs de texte — Foncé */
+  --color-primary: #1a1d23;
+  /* titres, texte principal */
+  --color-secondary: #3f4651;
+  /* texte secondaire */
+  --color-muted: #6b7280;
+  /* texte désactivé, placeholders */
+  --color-subtle: #8a919c;
+  /* hints, métadonnées */
 
-  /* Bordures — Gris fins sur fond noir */
-  --color-border: #4a5059;
+  /* Bordures — Gris fins sur fond clair */
+  --color-border: #dfe3e8;
   /* bordure par défaut */
-  --color-border-2: #626974;
+  --color-border-2: #c5cbd3;
   /* bordure accentuée */
 
-  /* Accent principal — JAUNE PREMIUM (touche personnalisée) */
-  --color-accent: #b8bec7;
-  /* jaune doré premium */
-  --color-accent-2: #949ba6;
-  /* jaune doré plus profond */
-  --color-accent-3: #d9dde3;
-  /* jaune doré lumineux (hover) */
-  --color-accent-4: rgba(184, 190, 199, 0.16);
-  /* jaune doré transparent (bg) */
+  /* Accent principal — Or du logo Royal Palace */
+  --color-accent: #a87b22;
+  /* or */
+  --color-accent-2: #8a6318;
+  /* or plus profond */
+  --color-accent-3: #c4973c;
+  /* or lumineux (hover) */
+  --color-accent-4: rgba(168, 123, 34, 0.12);
+  /* or transparent (bg) */
 
-  /* Sémantiques adaptées au thème noir */
-  --color-success: #4ade80;
-  --color-success-bg: rgba(74, 222, 128, 0.1);
-  --color-warning: #fbbf24;
-  --color-warning-bg: rgba(251, 191, 36, 0.1);
-  --color-danger: #f87171;
-  --color-danger-bg: rgba(248, 113, 113, 0.1);
-  --color-info: #60a5fa;
-  --color-info-bg: rgba(96, 165, 250, 0.1);
+  /* Sémantiques adaptées au thème clair */
+  --color-success: #15803d;
+  --color-success-bg: rgba(22, 163, 74, 0.1);
+  --color-warning: #b45309;
+  --color-warning-bg: rgba(217, 119, 6, 0.12);
+  --color-danger: #dc2626;
+  --color-danger-bg: rgba(220, 38, 38, 0.08);
+  --color-info: #2563eb;
+  --color-info-bg: rgba(37, 99, 235, 0.08);
 
-  /* Ombres — Sur fond noir */
-  --shadow-sm: 0 1px 3px rgba(2, 55, 97, 0.2), 0 1px 2px rgba(2, 55, 97, 0.12);
-  --shadow-md: 0 4px 16px rgba(2, 55, 97, 0.24), 0 2px 6px rgba(2, 55, 97, 0.16);
-  --shadow-lg: 0 12px 32px rgba(2, 55, 97, 0.3), 0 4px 12px rgba(2, 55, 97, 0.18);
-  --shadow-xl: 0 20px 48px rgba(2, 55, 97, 0.34), 0 8px 24px rgba(2, 55, 97, 0.2);
-  --shadow-accent: 0 4px 20px rgba(212, 168, 71, 0.15);
+  /* Ombres — Sur fond clair */
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 4px 16px rgba(16, 24, 40, 0.08), 0 2px 6px rgba(16, 24, 40, 0.05);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12), 0 4px 12px rgba(16, 24, 40, 0.06);
+  --shadow-xl: 0 20px 48px rgba(16, 24, 40, 0.16), 0 8px 24px rgba(16, 24, 40, 0.08);
+  --shadow-accent: 0 4px 20px rgba(168, 123, 34, 0.18);
   /* ombre dorée subtile */
+
+  /* Palettes Tailwind neutres inversées : les classes conçues pour l'ancien
+     thème sombre (bg-slate-800, border-gray-700, text-slate-300, variantes /50…)
+     deviennent automatiquement claires. */
+  --color-slate-50: #0f1218;
+  --color-slate-100: #1a1d23;
+  --color-slate-200: #262b33;
+  --color-slate-300: #3f4651;
+  --color-slate-400: #555c67;
+  --color-slate-500: #6b7280;
+  --color-slate-600: #c5cbd3;
+  --color-slate-700: #e4e7ec;
+  --color-slate-800: #f0f2f5;
+  --color-slate-900: #ffffff;
+  --color-slate-950: #f4f5f7;
+  --color-gray-50: var(--color-slate-50);
+  --color-gray-100: var(--color-slate-100);
+  --color-gray-200: var(--color-slate-200);
+  --color-gray-300: var(--color-slate-300);
+  --color-gray-400: var(--color-slate-400);
+  --color-gray-500: var(--color-slate-500);
+  --color-gray-600: var(--color-slate-600);
+  --color-gray-700: var(--color-slate-700);
+  --color-gray-800: var(--color-slate-800);
+  --color-gray-900: var(--color-slate-900);
+  --color-gray-950: var(--color-slate-950);
+  --color-zinc-100: var(--color-slate-100);
+  --color-zinc-200: var(--color-slate-200);
+  --color-zinc-300: var(--color-slate-300);
+  --color-zinc-400: var(--color-slate-400);
+  --color-zinc-500: var(--color-slate-500);
+  --color-zinc-600: var(--color-slate-600);
+  --color-zinc-700: var(--color-slate-700);
+  --color-zinc-800: var(--color-slate-800);
+  --color-zinc-900: var(--color-slate-900);
+  --color-zinc-950: var(--color-slate-950);
+  --color-neutral-700: var(--color-slate-700);
+  --color-neutral-800: var(--color-slate-800);
+  --color-neutral-900: var(--color-slate-900);
+  --color-neutral-950: var(--color-slate-950);
+
+  /* Teintes vives : les nuances 300/400, lisibles sur fond noir, sont trop
+     pâles sur fond blanc — on les remplace par les nuances 600/700. */
+  --color-red-300: #b91c1c;
+  --color-red-400: #dc2626;
+  --color-orange-300: #c2410c;
+  --color-orange-400: #ea580c;
+  --color-amber-300: #b45309;
+  --color-amber-400: #d97706;
+  --color-yellow-300: #a16207;
+  --color-yellow-400: #ca8a04;
+  --color-lime-300: #4d7c0f;
+  --color-lime-400: #65a30d;
+  --color-green-300: #15803d;
+  --color-green-400: #16a34a;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #059669;
+  --color-teal-300: #0f766e;
+  --color-teal-400: #0d9488;
+  --color-cyan-300: #0e7490;
+  --color-cyan-400: #0891b2;
+  --color-sky-300: #0369a1;
+  --color-sky-400: #0284c7;
+  --color-blue-300: #1d4ed8;
+  --color-blue-400: #2563eb;
+  --color-indigo-300: #4338ca;
+  --color-indigo-400: #4f46e5;
+  --color-violet-300: #6d28d9;
+  --color-violet-400: #7c3aed;
+  --color-purple-300: #7e22ce;
+  --color-purple-400: #9333ea;
+  --color-fuchsia-300: #a21caf;
+  --color-fuchsia-400: #c026d3;
+  --color-pink-300: #be185d;
+  --color-pink-400: #db2777;
+  --color-rose-300: #be123c;
+  --color-rose-400: #e11d48;
 }
 
 /* ===== CLASSES UTILITAIRES CUSTOM ===== */
@@ -360,14 +439,14 @@ select:focus {
 
 /* ===== BOUTONS ===== */
 .btn-primary {
-  background-color: #ffffff !important;
-  color: #000000 !important;
+  background-color: var(--color-primary) !important;
+  color: #ffffff !important;
   border: none !important;
   transition: all 0.2s ease;
 }
 
 .btn-primary:hover {
-  background-color: #e8e8e8 !important;
+  background-color: #2f343d !important;
   box-shadow: var(--shadow-md) !important;
 }
 
@@ -576,7 +655,7 @@ td {
 
 /* ===== RECHARTS ===== */
 .recharts-tooltip-cursor {
-  fill: rgba(255, 255, 255, 0.02) !important;
+  fill: rgba(16, 24, 40, 0.04) !important;
 }
 
 .recharts-default-tooltip {
@@ -663,15 +742,15 @@ select option {
 .glass {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(20, 20, 20, 0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid var(--color-border) !important;
 }
 
 .glass-accent {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(212, 168, 71, 0.06) !important;
-  border: 1px solid rgba(212, 168, 71, 0.12) !important;
+  background: rgba(168, 123, 34, 0.06) !important;
+  border: 1px solid rgba(168, 123, 34, 0.18) !important;
 }
 
 /* ===== LINE CLAMP ===== */
@@ -751,7 +830,7 @@ select option {
   border: 2px solid #ff4d6d;
   border-radius: 8px;
   padding: 2px 10px;
-  color: #ffffff;
+  color: var(--color-primary);
   font-family: "Comic Sans MS", cursive;
   font-size: 36px;
   font-weight: 700;
@@ -784,7 +863,7 @@ select option {
 /* Avatar avec bordure dorée */
 .avatar-gold {
   border: 2px solid var(--color-accent);
-  box-shadow: 0 0 20px rgba(212, 168, 71, 0.15);
+  box-shadow: 0 0 20px rgba(168, 123, 34, 0.15);
 }
 
 /* Badge premium */
@@ -838,7 +917,7 @@ select option {
   height: 200%;
   background: linear-gradient(45deg,
       transparent 30%,
-      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.35) 50%,
       transparent 70%);
   transform: rotate(45deg);
   transition: all 0.5s ease;
@@ -846,4 +925,54 @@ select option {
 
 .btn-shine:hover::after {
   transform: rotate(45deg) translate(50%, -50%);
+}
+
+/* ===== THÈME CLAIR — ajustements des classes héritées du thème sombre ===== */
+
+/* text-white servait de « texte principal » sur fond noir (déjà redirigé vers
+   --color-primary plus haut). Sur un fond coloré ou foncé, il doit rester blanc. */
+:is([class*="bg-red-5"], [class*="bg-red-6"], [class*="bg-red-7"],
+    [class*="bg-orange-5"], [class*="bg-orange-6"], [class*="bg-orange-7"],
+    [class*="bg-amber-5"], [class*="bg-amber-6"], [class*="bg-amber-7"],
+    [class*="bg-yellow-6"], [class*="bg-yellow-7"],
+    [class*="bg-green-5"], [class*="bg-green-6"], [class*="bg-green-7"],
+    [class*="bg-emerald-5"], [class*="bg-emerald-6"], [class*="bg-emerald-7"],
+    [class*="bg-teal-5"], [class*="bg-teal-6"], [class*="bg-teal-7"],
+    [class*="bg-cyan-5"], [class*="bg-cyan-6"], [class*="bg-cyan-7"],
+    [class*="bg-sky-5"], [class*="bg-sky-6"], [class*="bg-sky-7"],
+    [class*="bg-blue-5"], [class*="bg-blue-6"], [class*="bg-blue-7"],
+    [class*="bg-indigo-5"], [class*="bg-indigo-6"], [class*="bg-indigo-7"],
+    [class*="bg-violet-5"], [class*="bg-violet-6"], [class*="bg-violet-7"],
+    [class*="bg-purple-5"], [class*="bg-purple-6"], [class*="bg-purple-7"],
+    [class*="bg-fuchsia-5"], [class*="bg-fuchsia-6"], [class*="bg-fuchsia-7"],
+    [class*="bg-pink-5"], [class*="bg-pink-6"], [class*="bg-pink-7"],
+    [class*="bg-rose-5"], [class*="bg-rose-6"], [class*="bg-rose-7"],
+    [class*="bg-[#"], [class*="bg-gradient-"], [class*="bg-black"], .bg-accent, .btn-primary):is(.text-white, [class*="hover:text-white"]:hover),
+:is([class*="bg-red-6"], [class*="bg-green-6"], [class*="bg-emerald-6"], [class*="bg-blue-6"],
+    [class*="bg-indigo-6"], [class*="bg-purple-6"], [class*="bg-[#"], [class*="bg-gradient-"], [class*="bg-black"]) .text-white {
+  color: #ffffff !important;
+}
+
+/* Fonds/bordures translucides blancs (invisibles sur fond clair) */
+[class*="bg-white/"] {
+  background-color: var(--color-surface-2) !important;
+}
+
+[class*="border-white/"] {
+  border-color: var(--color-border) !important;
+}
+
+/* hover:text-white sur fond clair : on garde un contraste foncé */
+[class*="hover:text-white"]:hover {
+  color: var(--color-primary);
+}
+
+/* Les tons fixes du thème sombre utilisés en classes arbitraires */
+.bg-\[\#101415\],
+.bg-\[\#111827\] {
+  background-color: var(--color-surface) !important;
+}
+
+.bg-\[\#171b1c\] {
+  background-color: var(--color-surface-2) !important;
 }

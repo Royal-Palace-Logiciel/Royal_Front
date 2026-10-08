@@ -2,8 +2,7 @@
 // Champs de base du formulaire client (identiques à ceux de la page "Clients"),
 // extraits pour être réutilisés partout où un client est créé/modifié — ex.
 // dans le modal Hôtel lors d'une réservation — sans dupliquer les champs.
-// La section KYC (conformité casino) reste propre à la page Clients : elle est
-// optionnelle même là-bas (déclenchée par "Joueur de casino") et n'a pas sa
+// La section KYC reste propre à la page Clients : elle n'a pas sa
 // place dans un ajout rapide de client pendant une réservation.
 import React from 'react';
 import { ClientFormData } from '../../services/client.service';
@@ -148,20 +147,6 @@ export const ClientCoreFormFields: React.FC<ClientCoreFormFieldsProps> = ({
           <option value="BLOCKED">Bloqué</option>
         </select>
       </div>
-    </div>
-
-    <div className="border-t border-base pt-4">
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          name="is_casino_player"
-          checked={formData.is_casino_player || false}
-          onChange={onChange}
-          className="w-4 h-4 rounded border-base text-accent focus:ring-accent"
-          disabled={isSubmitting}
-        />
-        <span>🎰 Joueur de casino</span>
-      </label>
     </div>
 
     <div className="space-y-4 border-t border-base pt-4">

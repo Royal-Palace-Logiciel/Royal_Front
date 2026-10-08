@@ -13,7 +13,6 @@ export interface Client {
   type_piece: string | null;
   numero_piece: string | null;
   photo_url: string | null;
-  is_casino_player: boolean;
   statut: 'ACTIF' | 'INACTIF' | 'BLOCKED';
   created_at?: string;
   updated_at?: string;
@@ -30,7 +29,6 @@ export interface ClientFormData {
   type_piece?: string;
   numero_piece?: string;
   photo_url?: string | null;
-  is_casino_player?: boolean;
   statut?: 'ACTIF' | 'INACTIF' | 'BLOCKED';
 }
 
@@ -101,12 +99,11 @@ interface ApiResponse<T> {
 
 export const clientService = {
   // Récupérer tous les clients
-  getClients: async (filters?: { nom?: string; statut?: string; is_casino_player?: boolean }): Promise<Client[]> => {
+  getClients: async (filters?: { nom?: string; statut?: string }): Promise<Client[]> => {
     try {
       const params = new URLSearchParams();
       if (filters?.nom) params.append('nom', filters.nom);
       if (filters?.statut) params.append('statut', filters.statut);
-      if (filters?.is_casino_player !== undefined) params.append('is_casino_player', String(filters.is_casino_player));
       
       const url = `/api/clients${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await api.get<ApiResponse<Client[]>>(url);

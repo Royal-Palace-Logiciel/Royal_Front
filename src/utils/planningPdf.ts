@@ -123,11 +123,11 @@ export async function exportWeeklyPlanningPdf({
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7);
     pdf.setTextColor(135, 145, 157);
-    pdf.text(`HDA Platform  |  ${dateLabel(weekDates[0], { day: '2-digit', month: '2-digit', year: 'numeric' })} - ${dateLabel(weekDates[weekDates.length - 1], { day: '2-digit', month: '2-digit', year: 'numeric' })}`, margin, pageHeight - 7);
+    pdf.text(`Royal Palace  |  ${dateLabel(weekDates[0], { day: '2-digit', month: '2-digit', year: 'numeric' })} - ${dateLabel(weekDates[weekDates.length - 1], { day: '2-digit', month: '2-digit', year: 'numeric' })}`, margin, pageHeight - 7);
     pdf.text(`${page} / ${pdf.getNumberOfPages()}`, pageWidth - margin, pageHeight - 7, { align: 'right' });
   }
 
-  pdf.setProperties({ title: pdfText(`Planning ${category}`), subject: 'Planning hebdomadaire du personnel', creator: 'HDA Platform' });
+  pdf.setProperties({ title: pdfText(`Planning ${category}`), subject: 'Planning hebdomadaire du personnel', creator: 'Royal Palace' });
   const slug = category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   pdf.save(`planning-${slug}-${weekDates[0]}-${weekDates[weekDates.length - 1]}.pdf`);
 }

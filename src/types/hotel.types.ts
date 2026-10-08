@@ -39,7 +39,6 @@ export interface Client {
   type_piece: string | null;
   numero_piece: string | null;
   photo_url: string | null;
-  is_casino_player: boolean;
   statut: 'ACTIF' | 'INACTIF' | 'BLOCKED';
   created_at?: string;
   updated_at?: string;

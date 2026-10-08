@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
-import logo from '../assets/logo_s.png';
+import logo from '../assets/logo_n.png';
 import AuthService from '../services/authService';
 
 interface LoginFormData {
@@ -285,10 +285,10 @@ export const LoginPage: React.FC = () => {
       <div className="relative z-10 w-full max-w-md animate-fade-in">
         {/* Logo et titre */}
         <div className="text-center mb-8">
-          <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+          <div className="w-60 h-28 mx-auto mb-4 flex items-center justify-center">
             <img 
               src={logo} 
-              alt="HDA Logo" 
+              alt="Royal Palace" 
               className="w-full h-full object-contain drop-shadow-lg hover:scale-105 transition-transform duration-500"
             />
           </div>
@@ -318,7 +318,7 @@ export const LoginPage: React.FC = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full bg-surface-2 border border-base rounded-xl py-2.5 pl-10 pr-4 text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 transition-all"
-                  placeholder="admin@hda.com"
+                  placeholder="admin@royalpalace.mg"
                   required
                 />
               </div>
@@ -432,7 +432,7 @@ export const LoginPage: React.FC = () => {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-subtle text-sm">
-            © {new Date().getFullYear()} HDA — Hôtel de l'Avenue
+            © {new Date().getFullYear()} Royal Palace — Antsirabe
           </p>
         </div>
       </div>

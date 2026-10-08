@@ -2,10 +2,8 @@ import {
   StockItem,
   CaisseTransaction,
   User,
-  JeuCasino,
   Reservation,
   Commande,
-  SessionJeu,
   StockMovement
 } from '../types';
 
@@ -89,9 +87,6 @@ export const initialStockItems: StockItem[] = [
   { id: 's13', nom: 'Champagne Brut', categorie: 'Vins', quantite: 7, unite: 'bouteille', prixUnitaire: 95, seuilMinimum: 12, status: 'faible', module: 'bar', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-06-01T00:00:00Z' },
   { id: 's14', nom: 'Gin Premium', categorie: 'Spiritueux', quantite: 18, unite: 'bouteille', prixUnitaire: 65, seuilMinimum: 8, status: 'disponible', module: 'bar', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-06-01T00:00:00Z' },
   { id: 's15', nom: 'Sirop de Framboise', categorie: 'Sirop', quantite: 2, unite: 'litre', prixUnitaire: 12, seuilMinimum: 5, status: 'faible', module: 'bar', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-06-01T00:00:00Z' },
-  // Casino
-  { id: 's16', nom: 'Jetons de Poker', categorie: 'Jeux', quantite: 5000, unite: 'pièce', prixUnitaire: 2, seuilMinimum: 1000, status: 'disponible', module: 'casino', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-06-01T00:00:00Z' },
-  { id: 's17', nom: 'Cartes à Jouer', categorie: 'Jeux', quantite: 8, unite: 'jeu', prixUnitaire: 15, seuilMinimum: 20, status: 'faible', module: 'casino', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-06-01T00:00:00Z' },
 ];
 
 export const initialTransactions: CaisseTransaction[] = [
@@ -108,85 +103,12 @@ export const initialTransactions: CaisseTransaction[] = [
   // Bar
   { id: 't9', type: 'entree', montant: 1850, description: 'Soirée cocktail privée', categorie: 'Bar', userId: 'u2', userName: 'Sophie Martin', module: 'bar', date: new Date(Date.now() - 3600000).toISOString() },
   { id: 't10', type: 'sortie', montant: 420, description: 'Achat spiritueux premium', categorie: 'Stock', userId: 'u2', userName: 'Sophie Martin', module: 'bar', date: new Date(Date.now() - 259200000).toISOString() },
-  // Casino
-  { id: 't11', type: 'entree', montant: 8500, description: 'Gain casino - Table Roulette', categorie: 'Jeux', userId: 'u3', userName: 'Marc Bernard', module: 'casino', sousModule: 'roulette', date: new Date(Date.now() - 3600000).toISOString() },
-  { id: 't12', type: 'entree', montant: 12000, description: 'Gain casino - Blackjack VIP', categorie: 'Jeux', userId: 'u3', userName: 'Marc Bernard', module: 'casino', sousModule: 'blackjack', date: new Date(Date.now() - 7200000).toISOString() },
-  { id: 't13', type: 'sortie', montant: 4200, description: 'Paiement jackpot machine à sous', categorie: 'Jeux', userId: 'u3', userName: 'Marc Bernard', module: 'casino', sousModule: 'machines_sous', date: new Date(Date.now() - 14400000).toISOString() },
-  { id: 't14', type: 'entree', montant: 6800, description: 'Tournoi poker - Inscriptions', categorie: 'Jeux', userId: 'u3', userName: 'Marc Bernard', module: 'casino', sousModule: 'poker', date: new Date(Date.now() - 86400000).toISOString() },
-];
-
-export const initialJeuxCasino: JeuCasino[] = [
-  {
-    id: 'j1', nom: 'Roulette Européenne', type: 'roulette', tables: 3, mise_min: 5, mise_max: 5000, actif: true, icon: '🎯',
-    couleur: 'from-red-600 to-red-800',
-    caisse: {
-      module: 'casino', soldeTotal: 45200, totalEntrees: 62000, totalSorties: 16800,
-      transactions: initialTransactions.filter(t => t.sousModule === 'roulette')
-    }
-  },
-  {
-    id: 'j2', nom: 'Blackjack', type: 'blackjack', tables: 5, mise_min: 10, mise_max: 10000, actif: true, icon: '🃏',
-    couleur: 'from-slate-700 to-slate-900',
-    caisse: {
-      module: 'casino', soldeTotal: 78500, totalEntrees: 115000, totalSorties: 36500,
-      transactions: initialTransactions.filter(t => t.sousModule === 'blackjack')
-    }
-  },
-  {
-    id: 'j3', nom: 'Poker Texas Hold\'em', type: 'poker', tables: 8, mise_min: 20, mise_max: 50000, actif: true, icon: '♠️',
-    couleur: 'from-emerald-700 to-emerald-900',
-    caisse: {
-      module: 'casino', soldeTotal: 92000, totalEntrees: 145000, totalSorties: 53000,
-      transactions: initialTransactions.filter(t => t.sousModule === 'poker')
-    }
-  },
-  {
-    id: 'j4', nom: 'Machines à Sous', type: 'machines_sous', tables: 50, mise_min: 0.25, mise_max: 500, actif: true, icon: '🎰',
-    couleur: 'from-purple-600 to-purple-900',
-    caisse: {
-      module: 'casino', soldeTotal: 35800, totalEntrees: 89000, totalSorties: 53200,
-      transactions: initialTransactions.filter(t => t.sousModule === 'machines_sous')
-    }
-  },
-  {
-    id: 'j5', nom: 'Baccara', type: 'baccara', tables: 2, mise_min: 100, mise_max: 100000, actif: true, icon: '👑',
-    couleur: 'from-amber-600 to-amber-800',
-    caisse: {
-      module: 'casino', soldeTotal: 156000, totalEntrees: 280000, totalSorties: 124000,
-      transactions: []
-    }
-  },
-  {
-    id: 'j6', nom: 'Craps', type: 'craps', tables: 2, mise_min: 5, mise_max: 2000, actif: true, icon: '🎲',
-    couleur: 'from-blue-600 to-blue-900',
-    caisse: {
-      module: 'casino', soldeTotal: 28500, totalEntrees: 45000, totalSorties: 16500,
-      transactions: []
-    }
-  },
-  {
-    id: 'j7', nom: 'Keno', type: 'keno', tables: 1, mise_min: 1, mise_max: 100, actif: false, icon: '🎱',
-    couleur: 'from-teal-600 to-teal-900',
-    caisse: {
-      module: 'casino', soldeTotal: 12200, totalEntrees: 25000, totalSorties: 12800,
-      transactions: []
-    }
-  },
-  {
-    id: 'j8', nom: 'Loterie Prestige', type: 'loterie', tables: 1, mise_min: 2, mise_max: 50, actif: true, icon: '🏆',
-    couleur: 'from-rose-600 to-rose-900',
-    caisse: {
-      module: 'casino', soldeTotal: 18900, totalEntrees: 35000, totalSorties: 16100,
-      transactions: []
-    }
-  },
 ];
 
 export const stockMovements: StockMovement[] = [
   { id: 'sm1', itemId: 's2', itemNom: 'Serviettes de Bain', type: 'sortie', quantite: 22, motif: 'Utilisation chambres', userId: 'u4', userName: 'Emma Leroy', module: 'hebergement', date: new Date(Date.now() - 86400000).toISOString() },
   { id: 'sm2', itemId: 's8', itemNom: 'Filet de Boeuf', type: 'entree', quantite: 5, motif: 'Livraison fournisseur', userId: 'u2', userName: 'Sophie Martin', module: 'restaurant', date: new Date(Date.now() - 43200000).toISOString() },
   { id: 'sm3', itemId: 's12', itemNom: 'Whisky Aged 18Y', type: 'sortie', quantite: 4, motif: 'Service soirée VIP', userId: 'u2', userName: 'Sophie Martin', module: 'bar', date: new Date(Date.now() - 7200000).toISOString() },
-  { id: 'sm4', itemId: 's16', itemNom: 'Jetons de Poker', type: 'sortie', quantite: 500, motif: 'Tournoi hebdomadaire', userId: 'u3', userName: 'Marc Bernard', module: 'casino', date: new Date(Date.now() - 3600000).toISOString() },
 ];
 
 export const reservations: Reservation[] = [

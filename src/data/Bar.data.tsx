@@ -15,7 +15,7 @@ export const BAR_TABS = [
 export type BarTabId = typeof BAR_TABS[number]['id'];
 
 export const COCKTAIL_MENU: BarProduct[] = [
-  { id: 1, nom: 'HDA Signature', ingredients: 'Champagne, cognac VSOP, bitter orange, gold leaf', prix: 48, categorie: 'Signature', alcool: true },
+  { id: 1, nom: 'Royal Palace Signature', ingredients: 'Champagne, cognac VSOP, bitter orange, gold leaf', prix: 48, categorie: 'Signature', alcool: true },
   { id: 2, nom: 'Negroni Prestige', ingredients: 'Gin premium, Campari, Vermouth rouge, orange', prix: 28, categorie: 'Classique', alcool: true },
   { id: 3, nom: 'Royal Mojito', ingredients: 'Rhum blanc, citron vert, menthe fraîche, sucre, perrier', prix: 22, categorie: 'Classique', alcool: true },
   { id: 4, nom: 'Whisky Sour Gold', ingredients: "Bourbon 18 ans, citron, blanc d'œuf, Angostura", prix: 35, categorie: 'Premium', alcool: true },
@@ -27,7 +27,7 @@ export const COCKTAIL_MENU: BarProduct[] = [
 
 export const BEST_SELLERS: BestSeller[] = [
   { nom: 'Whisky 18Y', ventes: 42, montant: '7 560 MGA' },
-  { nom: 'HDA Signature', ventes: 38, montant: '1 824 MGA' },
+  { nom: 'Royal Palace Signature', ventes: 38, montant: '1 824 MGA' },
   { nom: 'Champagne Rosé', ventes: 29, montant: '2 755 MGA' },
 ];
 

@@ -161,7 +161,7 @@ export const PafSection: React.FC = () => {
   const handlePrintPafTicket = () => {
     if (ticketLines.length === 0) return;
     const rows = groupTicketLines(ticketLines).map((line) => `<div class="row line"><span>${escapeHtml(line.gender)} x${line.qty} (${escapeHtml(formatCurrency(line.price))})</span><span>${escapeHtml(formatCurrency(line.price * line.qty))}</span></div>`).join('');
-    printHtml('Ticket PAF', `${thermalHeader('Ticket PAF HDA', [`Paiement : ${getPaymentLabel(paymentMethod)}`])}${rows}<div class="row total"><span>TOTAL</span><span>${escapeHtml(formatCurrency(ticketTotal))}</span></div>`);
+    printHtml('Ticket PAF', `${thermalHeader('Ticket PAF Royal Palace', [`Paiement : ${getPaymentLabel(paymentMethod)}`])}${rows}<div class="row total"><span>TOTAL</span><span>${escapeHtml(formatCurrency(ticketTotal))}</span></div>`);
   };
 
   const handlePrintCurrent = () => {
@@ -192,7 +192,7 @@ export const PafSection: React.FC = () => {
 
       printHtml(
         `Clôture PAF ${detail.reference}`,
-        `${thermalHeader('Clôture PAF HDA', [`Référence : ${detail.reference}`, `Journée : ${detail.date}`, `Clôturée le : ${formatDate(detail.dateCloture)}`])}<div class="row line"><span>Tickets</span><strong>${detail.summary.totalTickets}</strong></div><div class="row line"><span>Homme</span><strong>${detail.summary.homme}</strong></div><div class="row line"><span>Femme</span><strong>${detail.summary.femme}</strong></div>${paymentSectionHtml}<div class="box row"><span>TOTAL CLÔTURE</span><span>${escapeHtml(formatCurrency(detail.summary.totalFinal ?? detail.summary.totalAmount))}</span></div>`,
+        `${thermalHeader('Clôture PAF Royal Palace', [`Référence : ${detail.reference}`, `Journée : ${detail.date}`, `Clôturée le : ${formatDate(detail.dateCloture)}`])}<div class="row line"><span>Tickets</span><strong>${detail.summary.totalTickets}</strong></div><div class="row line"><span>Homme</span><strong>${detail.summary.homme}</strong></div><div class="row line"><span>Femme</span><strong>${detail.summary.femme}</strong></div>${paymentSectionHtml}<div class="box row"><span>TOTAL CLÔTURE</span><span>${escapeHtml(formatCurrency(detail.summary.totalFinal ?? detail.summary.totalAmount))}</span></div>`,
         target,
       );
     } catch (printError) {
@@ -255,7 +255,7 @@ export const PafSection: React.FC = () => {
   const handleCopyHistory = async () => {
     if (history.length === 0) return;
     const text = [
-      'PAF HDA',
+      'PAF Royal Palace',
       `Date : ${new Date().toLocaleString('fr-FR')}`,
       `Opérations : ${summary.totalTickets}`,
       `Total : ${formatCurrency(summary.totalAmount)}`,

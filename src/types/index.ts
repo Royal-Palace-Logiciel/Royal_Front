@@ -1,9 +1,9 @@
 // ==================== TYPES GLOBAUX ====================
 
-export type ModuleType = 'hebergement' | 'hotel' | 'restaurant' | 'bar' | 'alcool' | 'casino' | 'finances' | 'utilisateurs' | 'dashboard' | 'clients' | 'rh' | 'planning';
+export type ModuleType = 'hebergement' | 'hotel' | 'restaurant' | 'bar' | 'alcool' | 'spa' | 'finances' | 'utilisateurs' | 'dashboard' | 'clients' | 'rh' | 'planning';
 
 // Valeurs autorisées par l'ENUM `users.role` du backend.
-export type UserRole = 'admin' | 'manager' | 'receptioniste' | 'caisse' | 'water' | 'housekeeping' | 'croupier' | 'hotesse';
+export type UserRole = 'admin' | 'manager' | 'receptioniste' | 'caisse' | 'water' | 'housekeeping' | 'hotesse';
 
 export type TransactionType = 'entree' | 'sortie';
 
@@ -68,7 +68,7 @@ export interface CaisseTransaction {
   userId: string;
   userName: string;
   module: ModuleType;
-  sousModule?: string; // Pour casino: nom du jeu
+  sousModule?: string;
   date: string;
   reference?: string;
 }
@@ -148,42 +148,6 @@ export interface BoissonsItem {
   prix: number;
   disponible: boolean;
   alcoolise: boolean;
-}
-
-// ==================== CASINO ====================
-
-export type JeuType = 
-  | 'roulette' 
-  | 'blackjack' 
-  | 'poker' 
-  | 'machines_sous' 
-  | 'baccara' 
-  | 'craps'
-  | 'keno'
-  | 'loterie';
-
-export interface JeuCasino {
-  id: string;
-  nom: string;
-  type: JeuType;
-  tables: number;
-  mise_min: number;
-  mise_max: number;
-  actif: boolean;
-  caisse: CaisseState;
-  icon: string;
-  couleur: string;
-}
-
-export interface SessionJeu {
-  id: string;
-  jeuId: string;
-  jeuNom: string;
-  joueurNom?: string;
-  mise: number;
-  gain: number;
-  resultat: 'gain' | 'perte' | 'egalite';
-  date: string;
 }
 
 // ==================== FINANCES ====================

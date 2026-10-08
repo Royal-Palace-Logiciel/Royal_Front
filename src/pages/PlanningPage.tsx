@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ContactRound, Download, Dices, Pencil, Plus, Save, ShieldCheck, Sparkles, Trash2, UtensilsCrossed, Wine } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ContactRound, Download, Pencil, Plus, Save, ShieldCheck, Sparkles, Trash2, UtensilsCrossed, Wine } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import planningService, { PlanningAssignment } from '../services/planning.service';
@@ -8,12 +8,11 @@ import { exportWeeklyPlanningPdf } from '../utils/planningPdf';
 import { exportWeeklyPlanningJpg } from '../utils/planningJpg';
 
 const categories: Array<{ name: string; icon: LucideIcon; description: string; prefix: string; color: string }> = [
-  { name: 'Videur', icon: ShieldCheck, description: 'Équipe de sécurité', prefix: 'V', color: '#ff6b00' },
-  { name: 'Femme de ménage', icon: Sparkles, description: 'Personnel d’entretien', prefix: 'F', color: '#ff9f1c' },
-  { name: 'Agents d’accueil', icon: ContactRound, description: 'Accueil et réception', prefix: 'A', color: '#ff355e' },
-  { name: 'Bar', icon: Wine, description: 'Équipe du bar', prefix: 'B', color: '#39ff14' },
-  { name: 'Restaurant', icon: UtensilsCrossed, description: 'Équipe de restauration', prefix: 'R', color: '#00e5ff' },
-  { name: 'Poker', icon: Dices, description: 'Équipe poker', prefix: 'P', color: '#4d7dff' },
+  { name: 'Videur', icon: ShieldCheck, description: 'Équipe de sécurité', prefix: 'V', color: '#ea580c' },
+  { name: 'Femme de ménage', icon: Sparkles, description: 'Personnel d’entretien', prefix: 'F', color: '#d97706' },
+  { name: 'Agents d’accueil', icon: ContactRound, description: 'Accueil et réception', prefix: 'A', color: '#e11d48' },
+  { name: 'Bar', icon: Wine, description: 'Équipe du bar', prefix: 'B', color: '#16a34a' },
+  { name: 'Restaurant', icon: UtensilsCrossed, description: 'Équipe de restauration', prefix: 'R', color: '#0891b2' },
 ];
 
 const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -49,18 +48,11 @@ const accueilSchedules: Record<number, Record<number, string>> = {
   2: { 1: '17:00 – 07:00', 3: '07:00 – 17:00', 4: '07:00 – 17:00', 5: '07:00 – 17:00', 0: '07:00 – 17:00' },
   3: { 1: '07:00 – 17:00', 2: '07:00 – 17:00', 4: '17:00 – 07:00', 6: '07:00 – 17:00', 0: '07:00 – 17:00' },
 };
-const pokerSchedules: Record<number, Record<number, string>> = {
-  1: { 2: '20:00 – 04:00', 3: '20:00 – 04:00', 4: '20:00 – 04:00', 5: '20:00 – 04:00', 6: '20:00 – 04:00' },
-  2: { 2: '20:00 – 04:00', 3: '20:00 – 04:00', 4: '20:00 – 04:00', 5: '20:00 – 04:00', 6: '20:00 – 04:00' },
-  3: { 2: '20:00 – 04:00', 3: '20:00 – 04:00', 4: '20:00 – 04:00', 5: '20:00 – 04:00', 6: '20:00 – 04:00' },
-  4: { 3: '20:00 – 04:00', 4: '20:00 – 04:00', 5: '20:00 – 04:00', 6: '20:00 – 04:00' },
-};
 const scheduleForDate = (date: string, category: string, slot: number) => {
   const weekday = new Date(`${date}T12:00:00`).getDay();
   if (category === 'Videur') return videurSchedules[slot]?.[weekday] || '';
   if (category === 'Femme de ménage') return cleaningSchedules[slot]?.[weekday] || '';
   if (category === 'Agents d’accueil') return accueilSchedules[slot]?.[weekday] || '';
-  if (category === 'Poker') return pokerSchedules[slot]?.[weekday] || '';
   return defaultSchedule;
 };
 const emptyAssignments = (date: string, category: string): PlanningAssignment[] => Array.from({ length: 6 }, (_, index) => ({ slot: index + 1, employeeId: null, employeeName: '', schedule: scheduleForDate(date, category, index + 1) }));

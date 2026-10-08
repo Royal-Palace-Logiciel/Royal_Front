@@ -6,10 +6,10 @@ import { ModuleType } from '../types';
 import { canAccessModule } from '../utils/permissions';
 import {
   LayoutDashboard, BedDouble, Hotel, UtensilsCrossed,
-  Wine, Dices, DollarSign, X, MoreHorizontal,
+  Wine, Waves, DollarSign, X, MoreHorizontal,
   UserCog, UserRoundPlus, Martini, UsersRound, CalendarDays
 } from 'lucide-react';
-import logo from '../assets/logo_s.png';
+import logo from '../assets/logo_n.png';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface NavItem {
@@ -24,19 +24,19 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { id: 'dashboard', label: 'Tableau de Bord', icon: <LayoutDashboard size={20} />, iconColor: '#ff6b00', gradient: 'from-accent to-accent-2', path: "/dashboard", roles: ['admin', 'manager'] },
+  { id: 'dashboard', label: 'Tableau de Bord', icon: <LayoutDashboard size={20} />, iconColor: '#ea580c', gradient: 'from-accent to-accent-2', path: "/dashboard", roles: ['admin', 'manager'] },
   // Hébergement module temporarily disabled - commented out from navigation
   // { id: 'hebergement', label: 'Hébergement', icon: <BedDouble size={20} />, gradient: 'from-accent to-accent-2', path: "/hebergement", roles: ['admin', 'manager', 'receptioniste', 'housekeeping', 'caissier', 'caisse', 'stock_manager'] },
-  { id: 'hotel', label: 'Hôtel', icon: <Hotel size={20} />, iconColor: '#ff9f1c', gradient: 'from-accent to-accent-2', path: "/hotel", roles: ['admin', 'manager', 'receptioniste', 'housekeeping', 'caisse', 'caissier', 'stock_manager'] },
-  { id: 'restaurant', label: 'Restaurant', icon: <UtensilsCrossed size={20} />, iconColor: '#ff355e', gradient: 'from-accent to-accent-2', path: "/restaurant", roles: ['admin', 'manager', 'receptioniste', 'caisse', 'caissier', 'stock_manager'] },
-  { id: 'bar', label: 'Bar & Lounge', icon: <Wine size={20} />, iconColor: '#39ff14', gradient: 'from-accent to-accent-2', path: "/bar", roles: ['admin', 'manager', 'water', 'barman', 'hotesse', 'receptioniste', 'caissier', 'caisse', 'stock_manager'] },
+  { id: 'hotel', label: 'Hôtel', icon: <Hotel size={20} />, iconColor: '#d97706', gradient: 'from-accent to-accent-2', path: "/hotel", roles: ['admin', 'manager', 'receptioniste', 'housekeeping', 'caisse', 'caissier', 'stock_manager'] },
+  { id: 'restaurant', label: 'Restaurant', icon: <UtensilsCrossed size={20} />, iconColor: '#e11d48', gradient: 'from-accent to-accent-2', path: "/restaurant", roles: ['admin', 'manager', 'receptioniste', 'caisse', 'caissier', 'stock_manager'] },
+  { id: 'bar', label: 'Bar & Lounge', icon: <Wine size={20} />, iconColor: '#16a34a', gradient: 'from-accent to-accent-2', path: "/bar", roles: ['admin', 'manager', 'water', 'barman', 'hotesse', 'receptioniste', 'caissier', 'caisse', 'stock_manager'] },
+  { id: 'spa', label: 'SPA — Piscine', icon: <Waves size={20} />, iconColor: '#0891b2', gradient: 'from-accent to-accent-2', path: "/spa", roles: ['admin', 'manager', 'caisse', 'caissier'] },
   // { id: 'alcool', label: 'Alcool', icon: <Martini size={20} />, gradient: 'from-amber-500 to-orange-500', path: "/alcool", roles: ['admin', 'manager', 'water', 'caissier', 'caisse', 'stock_manager'] },
-  { id: 'casino', label: 'Casino', icon: <Dices size={20} />, iconColor: '#00e5ff', gradient: 'from-accent to-accent-2', path: "/casino", roles: ['admin', 'manager', 'caisse', 'caissier', 'croupier'] },
-  { id: 'finances', label: 'Finances', icon: <DollarSign size={20} />, iconColor: '#faff00', gradient: 'from-accent to-accent-2', path: "/finances", roles: ['admin', 'manager', 'caisse', 'caissier'] },
-  { id: 'rh', label: 'Ressources humaines', icon: <UsersRound size={20} />, iconColor: '#ff35d1', gradient: 'from-accent to-accent-2', path: "/rh", roles: ['admin', 'manager', 'receptioniste', 'housekeeping', 'caisse', 'caissier', 'water', 'barman', 'croupier'] },
-  { id: 'planning', label: 'Planning', icon: <CalendarDays size={20} />, iconColor: '#4d7dff', gradient: 'from-accent to-accent-2', path: "/planning", roles: ['admin', 'manager'] },
-  { id: 'clients', label: 'Clients', icon: <UserRoundPlus size={20} />, iconColor: '#b6ff00', gradient: 'from-accent to-accent-2', path: "/clients", roles: ['admin', 'manager', 'receptioniste', 'caisse', 'caissier'] },
-  { id: 'utilisateurs', label: 'Utilisateurs', icon: <UserCog size={20} />, iconColor: '#bf5bff', gradient: 'from-accent to-accent-2', path: "/utilisateurs", roles: ['admin'] },
+  { id: 'finances', label: 'Finances', icon: <DollarSign size={20} />, iconColor: '#a87b22', gradient: 'from-accent to-accent-2', path: "/finances", roles: ['admin', 'manager', 'caisse', 'caissier'] },
+  { id: 'rh', label: 'Ressources humaines', icon: <UsersRound size={20} />, iconColor: '#c026d3', gradient: 'from-accent to-accent-2', path: "/rh", roles: ['admin', 'manager', 'receptioniste', 'housekeeping', 'caisse', 'caissier', 'water', 'barman'] },
+  { id: 'planning', label: 'Planning', icon: <CalendarDays size={20} />, iconColor: '#2563eb', gradient: 'from-accent to-accent-2', path: "/planning", roles: ['admin', 'manager'] },
+  { id: 'clients', label: 'Clients', icon: <UserRoundPlus size={20} />, iconColor: '#65a30d', gradient: 'from-accent to-accent-2', path: "/clients", roles: ['admin', 'manager', 'receptioniste', 'caisse', 'caissier'] },
+  { id: 'utilisateurs', label: 'Utilisateurs', icon: <UserCog size={20} />, iconColor: '#9333ea', gradient: 'from-accent to-accent-2', path: "/utilisateurs", roles: ['admin'] },
 ];
 
 /* ─── ONDULATION COMME BORDURE ─── */
@@ -321,7 +321,7 @@ export const Sidebar: React.FC = () => {
         <WavyEdge />
 
         {/* LOGO */}
-        <Tooltip label="HDA Platform">
+        <Tooltip label="Royal Palace">
           <button
             onClick={() => navigate('/dashboard')}
             style={{
@@ -347,7 +347,7 @@ export const Sidebar: React.FC = () => {
           >
             <img
               src={logo}
-              alt="HDA Platform"
+              alt="Royal Palace"
               style={{
                 width: '100%',
                 height: '100%',
@@ -669,9 +669,9 @@ const MobileBottomNav: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: isMoreActive || showMore ? '#4d7dff24' : 'var(--color-surface-2)',
-                  color: '#4d7dff',
-                  boxShadow: isMoreActive || showMore ? '0 0 14px #4d7dff55' : 'none',
+                  backgroundColor: isMoreActive || showMore ? '#2563eb24' : 'var(--color-surface-2)',
+                  color: '#2563eb',
+                  boxShadow: isMoreActive || showMore ? '0 0 14px #2563eb55' : 'none',
                   transition: 'all 0.15s',
                 }}
               >
@@ -681,7 +681,7 @@ const MobileBottomNav: React.FC = () => {
                 style={{
                   fontSize: '10px',
                   fontWeight: 500,
-                  color: isMoreActive || showMore ? '#4d7dff' : 'var(--color-subtle)',
+                  color: isMoreActive || showMore ? '#2563eb' : 'var(--color-subtle)',
                 }}
               >
                 Plus

@@ -44,8 +44,7 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
     prenom: '',
     telephone: '',
     email: '',
-    statut: 'ACTIF' as 'ACTIF' | 'INACTIF' | 'BLOCKED',
-    is_casino_player: false
+    statut: 'ACTIF' as 'ACTIF' | 'INACTIF' | 'BLOCKED'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -84,8 +83,7 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
       prenom: client.prenom || '',
       telephone: client.telephone || '',
       email: client.email || '',
-      statut: (client.statut as any) || 'ACTIF',
-      is_casino_player: client.is_casino_player || false
+      statut: (client.statut as any) || 'ACTIF'
     });
     setEditModalOpen(true);
   };
@@ -104,8 +102,7 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
         prenom: editFormData.prenom.trim() || undefined,
         telephone: editFormData.telephone.trim() || undefined,
         email: editFormData.email.trim() || undefined,
-        statut: editFormData.statut,
-        is_casino_player: editFormData.is_casino_player
+        statut: editFormData.statut
       };
 
       // Appeler updateClient du hook
@@ -276,12 +273,6 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
                           <p className="text-white font-medium text-sm">
                             {client.prenom} {client.nom}
                           </p>
-                          {client.is_casino_player && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-accent/20 text-accent text-[10px] font-medium rounded-full">
-                              <Sparkles size={10} />
-                              Casino
-                            </span>
-                          )}
                         </div>
                       </div>
                     </td>
@@ -443,17 +434,6 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
                   <option value="INACTIF">Inactif</option>
                   <option value="BLOCKED">Bloqué</option>
                 </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={editFormData.is_casino_player}
-                  onChange={(e) => setEditFormData({ ...editFormData, is_casino_player: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-accent focus:ring-accent"
-                  disabled={isSubmitting}
-                />
-                <label className="text-sm text-gray-300">🎰 Joueur de casino</label>
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-gray-800">

@@ -9,7 +9,7 @@ export interface Order {
   id: number;
   client_id: number | null;
   table_id: number | null;
-  source_module: 'RESTAURANT' | 'BAR' | 'CASINO' | 'HOTEL';
+  source_module: 'RESTAURANT' | 'BAR' | 'HOTEL';
   montant_total: number;
   statut: 'EN_ATTENTE' | 'EN_COURS' | 'SERVIE' | 'PAYE' | 'PAYEE' | 'ANNULEE';
   created_at: string;

@@ -62,7 +62,7 @@ export const stockService = {
   async createPurchase(data: {
     supplier_id: number;
     location_id: number;
-    source_module: 'HEBERGEMENT' | 'HOTEL' | 'RESTAURANT' | 'BAR' | 'CASINO' | 'GENERAL';
+    source_module: 'HEBERGEMENT' | 'HOTEL' | 'RESTAURANT' | 'BAR' | 'GENERAL';
     items: Array<{ product_id: number; quantite: number; prix_unitaire: number }>;
   }) {
     const response = await api.post('/api/stock/purchases', data);
