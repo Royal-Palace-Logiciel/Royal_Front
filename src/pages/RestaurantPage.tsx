@@ -56,6 +56,11 @@ const buildRestaurantTables = (apiTables: TableRestaurant[] = []): TableRestaura
 );
 
 export const RestaurantPage: React.FC = () => {
+  useEffect(() => {
+    document.body.classList.add('restaurant-theme');
+    return () => document.body.classList.remove('restaurant-theme');
+  }, []);
+
   const { state, dispatch } = useHDA();
   const currentUser = AuthService.getCurrentUser();
   const userIsAdmin = isAdmin(currentUser);

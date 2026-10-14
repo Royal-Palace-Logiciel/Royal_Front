@@ -82,9 +82,9 @@ export const MenuTab: React.FC<MenuTabProps> = ({
         style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
       >
         <div>
-          <span className="text-xs uppercase tracking-wider text-amber-500 font-bold block mb-1">RESTAURANT & CARTE</span>
+          <span className="text-xs uppercase tracking-wider text-accent font-bold block mb-1">RESTAURANT & CARTE</span>
           <h3 className="text-primary font-bold text-xl flex items-center gap-2">
-            <UtensilsCrossed className="text-amber-500" size={22} />
+            <UtensilsCrossed className="text-accent" size={22} />
             Gestion du Menu & Carte
           </h3>
           <p className="text-sm text-subtle mt-0.5">
@@ -132,7 +132,7 @@ export const MenuTab: React.FC<MenuTabProps> = ({
           <div className="lg:col-span-1 space-y-2">
             <button
               onClick={() => setSelectedCategory('tous')}
-              className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex justify-between items-center ${selectedCategory === 'tous' ? 'bg-amber-500 text-white shadow-md' : 'text-primary hover:bg-surface-2'
+              className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex justify-between items-center ${selectedCategory === 'tous' ? 'bg-accent text-white shadow-md' : 'text-primary hover:bg-surface-2'
                 }`}
               style={{
                 backgroundColor: selectedCategory === 'tous' ? '#f59e0b' : 'var(--color-surface-2)',
@@ -155,7 +155,7 @@ export const MenuTab: React.FC<MenuTabProps> = ({
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex justify-between items-center ${isSelected ? 'bg-amber-500 text-white shadow-md' : 'text-primary hover:bg-surface-2'
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex justify-between items-center ${isSelected ? 'bg-accent text-white shadow-md' : 'text-primary hover:bg-surface-2'
                       }`}
                     style={{
                       backgroundColor: isSelected ? '#f59e0b' : 'var(--color-surface-2)',
@@ -287,7 +287,7 @@ export const MenuTab: React.FC<MenuTabProps> = ({
         <div className="space-y-4">
           {ingredientsLoading && (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="animate-spin text-amber-400 mr-2" size={20} />
+              <Loader2 className="animate-spin text-accent mr-2" size={20} />
               <span className="text-slate-400 text-sm">Chargement des ingrédients...</span>
             </div>
           )}

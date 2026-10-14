@@ -425,7 +425,7 @@ const StockPanel: React.FC = () => {
     },
     {
       key: 'valeur', label: 'Valeur', render: (item: any) => (
-        <span className="text-amber-400 font-semibold">{formatCurrency(Number(item.quantite) * (item.prixUnitaire || item.prix_achat || 0))}</span>
+        <span className="text-accent font-semibold">{formatCurrency(Number(item.quantite) * (item.prixUnitaire || item.prix_achat || 0))}</span>
       )
     },
     {
@@ -457,7 +457,7 @@ const StockPanel: React.FC = () => {
     <>
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="animate-spin text-amber-400 mr-2" size={20} />
+          <Loader2 className="animate-spin text-accent mr-2" size={20} />
           <span className="text-slate-400 text-sm">Chargement du stock...</span>
         </div>
       )}
@@ -475,7 +475,7 @@ const StockPanel: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
               { label: 'Produits', value: enrichedStocks.length, color: 'text-white', sub: 'articles total' },
-              { label: 'Valeur Totale', value: formatCurrency(totalValue), color: 'text-amber-400', sub: 'en stock' },
+              { label: 'Valeur Totale', value: formatCurrency(totalValue), color: 'text-accent', sub: 'en stock' },
               { label: 'Alertes', value: alerts, color: alerts > 0 ? 'text-amber-400' : 'text-emerald-400', sub: 'à surveiller' },
               { label: 'Épuisés', value: enrichedStocks.filter(i => i.status === 'epuise').length, color: 'text-red-400', sub: 'rupture de stock' },
             ].map(stat => (
@@ -512,7 +512,7 @@ const StockPanel: React.FC = () => {
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <div className="relative flex-1 sm:flex-none">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="w-full sm:w-48 h-9 pl-9 pr-3 bg-slate-800 border border-slate-700/50 rounded-xl text-slate-300 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500/50" />
+                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="w-full sm:w-48 h-9 pl-9 pr-3 bg-slate-800 border border-slate-700/50 rounded-xl text-slate-300 placeholder-slate-500 text-sm focus:outline-none focus:border-[var(--color-accent)]" />
                 </div>
                 <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="h-9 px-3 bg-slate-800 border border-slate-700/50 rounded-xl text-slate-300 text-sm focus:outline-none">
                   <option value="all">Tous</option>
@@ -649,7 +649,7 @@ const StockPanel: React.FC = () => {
             <div className="mt-6 bg-slate-900 border border-slate-800/50 rounded-2xl overflow-hidden">
               <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800/50">
                 <h3 className="text-white font-semibold flex items-center gap-2">
-                  <History size={18} className="text-amber-400" />
+                  <History size={18} className="text-accent" />
                   Mouvements de stock récents
                 </h3>
                 <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-white text-sm">Fermer</button>
