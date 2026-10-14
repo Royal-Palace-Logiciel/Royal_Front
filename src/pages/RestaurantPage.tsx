@@ -33,6 +33,7 @@ import type {
 import AuthService from '../services/authService';
 import { clientService } from '../services/client.service';
 import { getDefaultTabForRole, isAdmin, isCashier } from '../utils/permissions';
+import { removeRestaurantProductColor } from '../utils/restaurantProductColors';
 
 const RESTAURANT_TABLE_COUNT = 16;
 
@@ -381,8 +382,14 @@ export const RestaurantPage: React.FC = () => {
   // Produits (mock)
   const handleAddProduct = async (formData: any) => {
     try {
-      const res = await restaurantService.createProduct({ ...formData, prix_achat: 0 });
+      const res = await restaurantService.createProduct({ ...formData, prix_achat: 0, couleur: '' });
       if (!res.success) throw new Error(res.message || 'Création du produit impossible.');
+      try {
+        await restaurantService.saveProductRecipe(res.data.id, formData.ingredients || []);
+      } catch (recipeError) {
+        await restaurantService.deleteProduct(res.data.id);
+        throw recipeError;
+      }
       setProducts(prev => [...prev, res.data as Product]);
       setShowProductModal(false);
     } catch (error) {
@@ -419,7 +426,10 @@ export const RestaurantPage: React.FC = () => {
     try {
       const res = await restaurantService.updateProduct(editingProduct.id, formData);
       if (!res.success) throw new Error(res.message || 'Modification du produit impossible.');
-      setProducts(prev => prev.map(p => p.id === editingProduct.id ? res.data as Product : p));
+      await restaurantService.saveProductRecipe(editingProduct.id, formData.ingredients || []);
+      setProducts(prev => prev.map(p => p.id === editingProduct.id
+        ? { ...res.data as Product, couleur: p.couleur }
+        : p));
       setEditingProduct(null);
       setShowProductModal(false);
     } catch (error) {
@@ -439,6 +449,7 @@ export const RestaurantPage: React.FC = () => {
     setIsDeletingProduct(true);
     try {
       await restaurantService.deleteProduct(pendingDeleteProduct.id);
+      removeRestaurantProductColor(pendingDeleteProduct);
       setProducts(prev => prev.filter(p => p.id !== pendingDeleteProduct.id));
       setPendingDeleteProduct(null);
     } catch (error) {

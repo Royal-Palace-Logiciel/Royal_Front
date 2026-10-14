@@ -35,7 +35,6 @@ interface StockItem {
 }
 
 interface StockLocation { id: number; nom: string; }
-interface Unit { id: number; code: string; nom: string; }
 interface Supplier { id: number; nom: string; telephone?: string; email?: string; }
 interface Category { id: number; nom: string; }
 interface Subcategory { id: number; category_id: number; nom: string; }
@@ -62,12 +61,24 @@ type InnerTab = 'stock' | 'achats';
 
 const inputClass = "w-full h-9 px-3 rounded-xl text-primary text-sm";
 const inputStyle = { backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-border)' };
+const ingredientUnits = [
+  { value: 'SACHET', label: 'Sachet' },
+  { value: 'BOITE', label: 'Boite' },
+  { value: 'BOUTEILLE', label: 'Bouteille' },
+  { value: 'PORTION', label: 'Portion' },
+  { value: 'PIECE', label: 'Pièce' },
+  { value: 'ML', label: 'Millilitre' },
+  { value: 'CL', label: 'Centilitre' },
+  { value: 'L', label: 'Litre' },
+  { value: 'G', label: 'Grammes' },
+  { value: 'KG', label: 'Kilogrammes' },
+];
 
 const ModalShell: React.FC<{
   title: string; onClose: () => void; wide?: boolean; children: React.ReactNode;
 }> = ({ title, onClose, wide, children }) =>
     createPortal(
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-10 pb-4">
         <div
           className={`rounded-xl p-6 w-full ${wide ? 'max-w-2xl' : 'max-w-sm'} max-h-[90vh] overflow-y-auto`}
           style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
@@ -86,7 +97,7 @@ const ModalShell: React.FC<{
 
 const TabBar: React.FC<{ active: InnerTab; onChange: (t: InnerTab) => void }> = ({ active, onChange }) => (
   <div className="flex gap-1 mb-5 p-1 rounded-xl w-fit" style={{ backgroundColor: 'var(--color-surface-2)' }}>
-      {([
+    {([
       { key: 'stock' as const, label: 'Stock', icon: <Package size={14} /> },
       { key: 'achats' as const, label: 'Achats', icon: <Truck size={14} /> },
     ]).map(t => (
@@ -142,17 +153,12 @@ const StockPanel: React.FC = () => {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showPortionModal, setShowPortionModal] = useState(false);
   const [editItem, setEditItem] = useState<StockItem | null>(null);
-  const [adjustTarget, setAdjustTarget] = useState<StockItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StockItem | null>(null);
-  const [portionTarget, setPortionTarget] = useState<StockItem | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Ajout produit
-  const [units, setUnits] = useState<Unit[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [form, setForm] = useState({
@@ -162,17 +168,6 @@ const StockPanel: React.FC = () => {
   });
   const [addErr, setAddErr] = useState('');
   const [addLoading, setAddLoading] = useState(false);
-
-  // Ajustement
-  const [adjType, setAdjType] = useState<'ENTREE' | 'SORTIE'>('ENTREE');
-  const [adjQty, setAdjQty] = useState(0);
-  const [adjErr, setAdjErr] = useState('');
-  const [adjLoading, setAdjLoading] = useState(false);
-
-  // Portion management
-  const [portionSize, setPortionSize] = useState(0);
-  const [portionErr, setPortionErr] = useState('');
-  const [portionLoading, setPortionLoading] = useState(false);
 
   const [productTypes, setProductTypes] = useState<{ id: number; nom: string; actif: boolean }[]>([]);
 
@@ -201,18 +196,13 @@ const StockPanel: React.FC = () => {
   useEffect(() => {
     Promise.all([
       restaurantService.getStockLocations(),
-      restaurantService.getUnits(),
       restaurantService.getCategories().catch(() => ({ success: false, data: [] })),
-    ]).then(([loc, un, cat]) => {
+    ]).then(([loc, cat]) => {
       if (loc.success) {
         setLocations(loc.data);
         const restaurantLocation = loc.data.find((location: StockLocation) => location.nom.toLowerCase().includes('restaurant'));
         if (restaurantLocation) setSelectedLoc(restaurantLocation.id);
         else if (loc.data.length > 0) setSelectedLoc(loc.data[0].id);
-      }
-      if (un.success) {
-        setUnits(un.data);
-        if (un.data.length > 0) setForm(prev => ({ ...prev, unite: un.data[0].code }));
       }
       if (cat.success) setCategories(cat.data);
     });
@@ -239,22 +229,22 @@ const StockPanel: React.FC = () => {
       .catch(console.error);
   }, []);
 
-  const loadStocks = useCallback(() => {
+  const loadStocks = useCallback(async (requestedTypeFilter = typeFilter) => {
     if (!selectedLoc) return;
     setLoading(true);
     setError(null);
     const params: Record<string, any> = { location_id: selectedLoc };
-    if (typeFilter) params.type_produit = typeFilter;
-    restaurantService.getStocks(params)
-      .then(res => { 
-        if (res.success) setStocks(res.data); 
-        else setError('Erreur lors du chargement du stock');
-      })
-      .catch(err => {
-        setError(getErrorMessage(err));
-        console.error(err);
-      })
-      .finally(() => setLoading(false));
+    if (requestedTypeFilter) params.type_produit = requestedTypeFilter;
+    try {
+      const res = await restaurantService.getStocks(params);
+      if (res.success) setStocks(res.data);
+      else setError('Erreur lors du chargement du stock');
+    } catch (err) {
+      setError(getErrorMessage(err));
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, [selectedLoc, typeFilter]);
 
   useEffect(() => { loadStocks(); }, [loadStocks]);
@@ -283,66 +273,43 @@ const StockPanel: React.FC = () => {
           const updated = prev.map(s =>
             s.product_id === productId ? { ...s, quantite: res.data.newQty } : s
           );
-          
+
           const updatedItem = updated.find(s => s.product_id === productId);
           if (updatedItem && updatedItem.quantite <= 5) {
             notifyStockLevel(updatedItem.product_nom, updatedItem.quantite, updatedItem.unite);
           }
-          
+
           return updated;
         });
       }
     } catch (e: any) { alert(e.message); }
   };
 
-  const handleAdjust = async () => {
-    if (!adjustTarget || !selectedLoc || adjQty <= 0) { setAdjErr('Quantité invalide.'); return; }
-    setAdjLoading(true); setAdjErr('');
-    try {
-      const res = await restaurantService.adjustStock({
-        product_id: adjustTarget.product_id,
-        location_id: selectedLoc,
-        type_mouvement: adjType,
-        quantite: adjQty,
-        source_module: 'MANUEL',
-      });
-      if (res.success) {
-        setStocks(prev => prev.map(s =>
-          s.product_id === adjustTarget.product_id ? { ...s, quantite: res.data.newQty } : s
-        ));
-        setShowAdjustModal(false);
-      }
-    } catch (e: any) { setAdjErr(e.message); }
-    finally { setAdjLoading(false); }
-  };
-
   const handleAddProduct = async () => {
     if (!selectedLoc) return;
-    const finalUnite = form.unite === 'AUTRE' ? form.uniteCustom.trim() : form.unite;
+    const finalUnite = form.unite.trim();
     if (!form.nom.trim()) { setAddErr('Nom requis.'); return; }
     if (!finalUnite) { setAddErr('Unité requise.'); return; }
+    if (form.prix_achat <= 0) { setAddErr("Prix d'achat requis et supérieur à 0."); return; }
     if (form.quantite <= 0) { setAddErr('Quantité initiale > 0.'); return; }
     setAddLoading(true); setAddErr('');
     try {
       const prodRes = await restaurantService.createProduct({
         nom: form.nom.trim(),
         unite: finalUnite,
-        type_produit: form.type_produit,
+        type_produit: 'MATIERE_PREMIERE',
         prix_achat: form.prix_achat,
-        prix_vente: form.prix_vente,
-        category_id: form.category_id ? Number(form.category_id) : undefined,
-        subcategory_id: form.subcategory_id ? Number(form.subcategory_id) : undefined,
-        portion_size: form.portion_size > 0 ? form.portion_size : undefined,
-        portion_unite: form.portion_unite,
+        prix_vente: 0,
       });
       if (!prodRes.data) throw new Error(prodRes.message || 'Erreur');
-      await restaurantService.adjustStock({
+      const stockRes = await restaurantService.adjustStock({
         product_id: prodRes.data.id,
         location_id: selectedLoc,
         type_mouvement: 'ENTREE',
         quantite: form.quantite,
         source_module: 'INVENTAIRE',
       });
+      if (!stockRes.success) throw new Error(stockRes.message || 'Le produit a été créé, mais son stock n’a pas été mis à jour.');
 
       const totalCost = form.quantite * Number(form.prix_achat || 0);
       if (totalCost > 0) {
@@ -358,7 +325,8 @@ const StockPanel: React.FC = () => {
         }
       }
 
-      await loadStocks();
+      setTypeFilter('');
+      await loadStocks('');
       setShowAddModal(false);
       setForm({ nom: '', category_id: '', subcategory_id: '', type_produit: 'MATIERE_PREMIERE', unite: '', uniteCustom: '', prix_achat: 0, prix_vente: 0, quantite: 0, portion_size: 0, portion_unite: 'g' });
       notifyStockLevel(form.nom.trim(), form.quantite, finalUnite);
@@ -389,48 +357,24 @@ const StockPanel: React.FC = () => {
     if (!deleteTarget || deleteLoading) return;
     setDeleteLoading(true);
     try {
-      const res = await restaurantService.deleteStockItem({ product_id: deleteTarget.product_id, location_id: deleteTarget.location_id });
+      const res = await restaurantService.deleteProduct(deleteTarget.product_id);
       if (res.success) {
-        setStocks(prev => prev.filter(s => !(s.product_id === deleteTarget.product_id && s.location_id === deleteTarget.location_id)));
+        setStocks(prev => prev.filter(s => s.product_id !== deleteTarget.product_id));
         setShowDeleteModal(false);
         setDeleteTarget(null);
-        addNotification('success', 'Produit supprimé du stock', 'Restaurant');
+        addNotification(
+          'success',
+          res.data.deleted
+            ? 'Produit et stocks supprimés définitivement'
+            : 'Produit archivé car il est lié à un historique; son nom peut être ajouté de nouveau',
+          'Restaurant'
+        );
       }
     } catch (e: any) {
       console.error('Delete error:', e);
       addNotification('error', e.message || 'Erreur lors de la suppression', 'Restaurant');
     } finally {
       setDeleteLoading(false);
-    }
-  };
-
-  const handleConsumePortion = async () => {
-    if (!portionTarget || !selectedLoc || portionSize <= 0) {
-      setPortionErr('Quantité de portion invalide.');
-      return;
-    }
-    setPortionLoading(true);
-    setPortionErr('');
-    try {
-      const res = await restaurantService.consumePortion({
-        product_id: portionTarget.product_id,
-        location_id: selectedLoc,
-        portion_size: portionSize,
-        portion_unit: 'g',
-      });
-      if (res.success) {
-        setStocks(prev => prev.map(s =>
-          s.product_id === portionTarget.product_id ? { ...s, quantite: res.data.new_quantity } : s
-        ));
-        setShowPortionModal(false);
-        setPortionTarget(null);
-        setPortionSize(0);
-        addNotification('success', `Portion de ${portionSize}g consommée. Reste: ${res.data.new_quantity}g`, 'Restaurant');
-      }
-    } catch (e: any) {
-      setPortionErr(e.message || 'Erreur lors de la consommation de portion');
-    } finally {
-      setPortionLoading(false);
     }
   };
 
@@ -456,51 +400,57 @@ const StockPanel: React.FC = () => {
   const alerts = enrichedStocks.filter(i => i.status !== 'disponible').length;
 
   const baseColumns = [
-    { key: 'product_nom', label: 'Produit', render: (item: any) => (
-      <div>
-        <p className="text-white font-medium">{item.product_nom}</p>
-        <p className="text-slate-500 text-xs">{item.type_produit} • {item.location_nom}</p>
-        {item.category_nom && <p className="text-slate-600 text-xs">Catégorie: {item.category_nom}</p>}
-        {item.subcategory_nom && <p className="text-slate-600 text-xs">Sous-catégorie: {item.subcategory_nom}</p>}
-      </div>
-    )},
-    { key: 'quantite', label: 'Stock', render: (item: any) => (
-      <div>
-        <p className="text-white font-semibold">{Number(item.quantite).toFixed(2)} {item.unite}</p>
-        <p className="text-slate-600 text-xs">Min: 5</p>
-      </div>
-    )},
-    { key: 'prix_achat', label: 'Prix Achat', render: (item: any) => (
-      <span className="text-white">{formatCurrency(item.prixUnitaire || item.prix_achat || 0)}</span>
-    )},
-    { key: 'valeur', label: 'Valeur', render: (item: any) => (
-      <span className="text-amber-400 font-semibold">{formatCurrency(Number(item.quantite) * (item.prixUnitaire || item.prix_achat || 0))}</span>
-    )},
-    { key: 'status', label: 'Statut', render: (item: any) => (
-      <Badge variant={item.status}>
-        {item.status === 'disponible' ? 'Disponible' : item.status === 'faible' ? 'Faible' : 'Épuisé'}
-      </Badge>
-    )},
+    {
+      key: 'product_nom', label: 'Produit', render: (item: any) => (
+        <div>
+          <p className="text-white font-medium">{item.product_nom}</p>
+          <p className="text-slate-500 text-xs">{item.type_produit} • {item.location_nom}</p>
+          {item.category_nom && <p className="text-slate-600 text-xs">Catégorie: {item.category_nom}</p>}
+          {item.subcategory_nom && <p className="text-slate-600 text-xs">Sous-catégorie: {item.subcategory_nom}</p>}
+        </div>
+      )
+    },
+    {
+      key: 'quantite', label: 'Stock', render: (item: any) => (
+        <div>
+          <p className="text-white font-semibold">{Number(item.quantite).toFixed(2)} {item.unite}</p>
+          <p className="text-slate-600 text-xs">Min: 5</p>
+        </div>
+      )
+    },
+    {
+      key: 'prix_achat', label: 'Prix Achat', render: (item: any) => (
+        <span className="text-white">{formatCurrency(item.prixUnitaire || item.prix_achat || 0)}</span>
+      )
+    },
+    {
+      key: 'valeur', label: 'Valeur', render: (item: any) => (
+        <span className="text-amber-400 font-semibold">{formatCurrency(Number(item.quantite) * (item.prixUnitaire || item.prix_achat || 0))}</span>
+      )
+    },
+    {
+      key: 'status', label: 'Statut', render: (item: any) => (
+        <Badge variant={item.status}>
+          {item.status === 'disponible' ? 'Disponible' : item.status === 'faible' ? 'Faible' : 'Épuisé'}
+        </Badge>
+      )
+    },
   ];
 
   const columns = userIsAdmin ? [
     ...baseColumns,
-    { key: 'actions', label: '', render: (item: any) => (
-      <div className="flex gap-2">
-        <button onClick={() => { setPortionTarget(item); setPortionSize(0); setShowPortionModal(true); }} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all" title="Consommer une portion">
-          <Package size={14} />
-        </button>
+    {
+      key: 'actions', label: '', render: (item: any) => (
+        <div className="flex gap-2">
         <button onClick={() => openEdit(item)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all" title="Modifier l'article">
           <Edit2 size={14} />
-        </button>
-        <button onClick={() => { setAdjustTarget(item); setAdjType('ENTREE'); setAdjQty(0); setAdjErr(''); setShowAdjustModal(true); }} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all" title="Ajuster le stock">
-          <RefreshCw size={14} />
         </button>
         <button onClick={() => { setDeleteTarget(item); setShowDeleteModal(true); }} className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-400 transition-all" title="Supprimer l'article">
           <Trash2 size={14} />
         </button>
-      </div>
-    )},
+        </div>
+      )
+    },
   ] : baseColumns;
 
   return (
@@ -591,57 +541,51 @@ const StockPanel: React.FC = () => {
           </div>
 
           {/* Add Product Modal */}
-          <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); setForm({ nom: '', category_id: '', subcategory_id: '', type_produit: 'MATIERE_PREMIERE', unite: '', uniteCustom: '', prix_achat: 0, prix_vente: 0, quantite: 0, portion_size: 0, portion_unite: 'g' }); }} title="Ajouter un produit">
-            <div className="space-y-4">
-              <Input label="Nom du produit" value={form.nom} onChange={e => setForm({...form, nom: e.target.value})} placeholder="Ex: Poulet 200g" />
-              <Select label="Type de produit" value={form.type_produit} onChange={e => setForm({...form, type_produit: e.target.value})} options={productTypes.map(t => ({ value: t.nom, label: t.nom }))} />
-              <Select label="Catégorie" value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value, subcategory_id: ''})} options={[{ value: '', label: 'Sans catégorie' }, ...categories.map(c => ({ value: String(c.id), label: c.nom }))]} />
-              {form.category_id && subcategories.length > 0 && (
-                <Select label="Sous-catégorie" value={form.subcategory_id} onChange={e => setForm({...form, subcategory_id: e.target.value})} options={[{ value: '', label: 'Sans sous-catégorie' }, ...subcategories.map(s => ({ value: String(s.id), label: s.nom }))]} />
-              )}
-              <Select label="Unité" value={form.unite} onChange={e => setForm({...form, unite: e.target.value})} options={units.map(u => ({ value: u.code, label: `${u.nom} (${u.code})` })).concat([{ value: 'AUTRE', label: 'Autre...' }])} />
-              {form.unite === 'AUTRE' && (
-                <Input label="Unité personnalisée" value={form.uniteCustom} onChange={e => setForm({...form, uniteCustom: e.target.value})} placeholder="Ex: paquet, bouteille..." />
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Prix d'achat (MGA)" type="number" value={form.prix_achat} onChange={e => setForm({...form, prix_achat: Number(e.target.value)})} />
-                <Input label="Prix de vente (MGA)" type="number" value={form.prix_vente} onChange={e => setForm({...form, prix_vente: Number(e.target.value)})} />
+          {showAddModal && (
+            <ModalShell title="Ajouter un produit" onClose={() => { setShowAddModal(false); setForm({ nom: '', category_id: '', subcategory_id: '', type_produit: 'MATIERE_PREMIERE', unite: '', uniteCustom: '', prix_achat: 0, prix_vente: 0, quantite: 0, portion_size: 0, portion_unite: 'g' }); }}>
+              <div className="space-y-4">
+                <Input label="Nom du produit" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} placeholder="Ex: Poulet 200g" required />
+                <Input label="Prix d'achat (MGA)" type="number" min="0.01" value={form.prix_achat} onChange={e => setForm({ ...form, prix_achat: Number(e.target.value) })} required />
+                <Select
+                  label="Unité"
+                  value={form.unite}
+                  onChange={e => setForm({ ...form, unite: e.target.value })}
+                  options={[{ value: '', label: 'Choisir une unité' }, ...ingredientUnits]}
+                  required
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label="Quantité initiale" type="number" min="0.01" value={form.quantite} onChange={e => setForm({ ...form, quantite: Number(e.target.value) })} required />
+                </div>
+                {addErr && <p className="text-red-400 text-sm">{addErr}</p>}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => { setShowAddModal(false); setForm({ nom: '', category_id: '', subcategory_id: '', type_produit: 'MATIERE_PREMIERE', unite: '', uniteCustom: '', prix_achat: 0, prix_vente: 0, quantite: 0, portion_size: 0, portion_unite: 'g' }); }}
+                    className="flex-1 h-10 px-4 rounded-xl text-sm font-medium transition-all bg-red-500 text-white hover:bg-red-400"
+                  >
+                    Annuler
+                  </button>
+                  <Button onClick={handleAddProduct} className="flex-1" disabled={addLoading}>{addLoading ? 'Ajout...' : 'Ajouter'}</Button>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Quantité initiale" type="number" value={form.quantite} onChange={e => setForm({...form, quantite: Number(e.target.value)})} />
-                <Input label="Taille portion (ex: 150)" type="number" value={form.portion_size} onChange={e => setForm({...form, portion_size: Number(e.target.value)})} placeholder="Pour gestion par portion" />
-              </div>
-              {form.portion_size > 0 && (
-                <Select label="Unité de portion" value={form.portion_unite} onChange={e => setForm({...form, portion_unite: e.target.value})} options={[
-                  { value: 'g', label: 'Grammes (g)' },
-                  { value: 'kg', label: 'Kilogrammes (kg)' },
-                  { value: 'ml', label: 'Millilitres (ml)' },
-                  { value: 'l', label: 'Litres (l)' },
-                  { value: 'unité', label: 'Unité' }
-                ]} />
-              )}
-              {addErr && <p className="text-red-400 text-sm">{addErr}</p>}
-              <div className="flex gap-3 pt-2">
-                <Button variant="secondary" onClick={() => { setShowAddModal(false); setForm({ nom: '', category_id: '', subcategory_id: '', type_produit: 'MATIERE_PREMIERE', unite: '', uniteCustom: '', prix_achat: 0, prix_vente: 0, quantite: 0, portion_size: 0, portion_unite: 'g' }); }} className="flex-1">Annuler</Button>
-                <Button onClick={handleAddProduct} className="flex-1" disabled={addLoading}>{addLoading ? 'Ajout...' : 'Ajouter'}</Button>
-              </div>
-            </div>
-          </Modal>
+            </ModalShell>
+          )}
 
           {/* Edit Stock Modal */}
           <Modal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setEditItem(null); }} title="Modifier le produit & stock">
             <div className="space-y-4">
-              <Input label="Nom du produit" value={form.nom} onChange={e => setForm({...form, nom: e.target.value})} />
+              <Input label="Nom du produit" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} />
+              <Input label="Prix d'achat (MGA)" type="number" value={form.prix_achat} onChange={e => setForm({ ...form, prix_achat: Number(e.target.value) })} />
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Prix d'achat (MGA)" type="number" value={form.prix_achat} onChange={e => setForm({...form, prix_achat: Number(e.target.value)})} />
-                <Input label="Prix de vente (MGA)" type="number" value={form.prix_vente} onChange={e => setForm({...form, prix_vente: Number(e.target.value)})} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Quantité" type="number" value={form.quantite} onChange={e => setForm({...form, quantite: Number(e.target.value)})} />
-                <Input label="Unité" value={form.unite} onChange={e => setForm({...form, unite: e.target.value})} placeholder="kg, pièce, l..." />
+                <Input label="Quantité" type="number" value={form.quantite} onChange={e => setForm({ ...form, quantite: Number(e.target.value) })} />
+                <Input label="Unité" value={form.unite} onChange={e => setForm({ ...form, unite: e.target.value })} placeholder="kg, pièce, l..." />
               </div>
               <div className="flex gap-3 pt-2">
-                <Button variant="secondary" onClick={() => { setShowEditModal(false); setEditItem(null); }} className="flex-1">Annuler</Button>
+                <button
+                  onClick={() => { setShowEditModal(false); setEditItem(null); }}
+                  className="flex-1 h-10 px-4 rounded-xl text-sm font-medium transition-all bg-red-500 text-white hover:bg-red-400"
+                >
+                  Annuler
+                </button>
                 <Button onClick={async () => {
                   if (!editItem || !selectedLoc) return;
                   try {
@@ -675,59 +619,11 @@ const StockPanel: React.FC = () => {
             </div>
           </Modal>
 
-          {/* Adjust Stock Modal */}
-          {showAdjustModal && adjustTarget && (
-            <ModalShell title="Ajuster le stock" onClose={() => setShowAdjustModal(false)}>
-              <div className="space-y-3">
-                <p className="text-sm text-slate-400">Produit: <span className="text-white font-medium">{adjustTarget.product_nom}</span></p>
-                <p className="text-sm text-slate-400">Stock actuel: <span className="text-white font-medium">{Number(adjustTarget.quantite).toFixed(2)} {adjustTarget.unite}</span></p>
-                <div>
-                  <label className="block text-sm text-slate-400 mb-1">Type de mouvement</label>
-                  <select
-                    value={adjType}
-                    onChange={e => setAdjType(e.target.value as 'ENTREE' | 'SORTIE')}
-                    className="w-full h-9 px-3 bg-slate-800 border border-slate-700/50 rounded-xl text-slate-300 text-sm focus:outline-none"
-                  >
-                    <option value="ENTREE">Entrée (+)</option>
-                    <option value="SORTIE">Sortie (-)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-400 mb-1">Quantité</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={adjQty}
-                    onChange={e => setAdjQty(Number(e.target.value))}
-                    className="w-full h-9 px-3 bg-slate-800 border border-slate-700/50 rounded-xl text-slate-300 text-sm focus:outline-none"
-                  />
-                </div>
-                {adjErr && <p className="text-red-400 text-sm">{adjErr}</p>}
-                <div className="flex gap-2 justify-end pt-1">
-                  <button 
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-800 text-slate-300 hover:bg-slate-700"
-                    onClick={() => setShowAdjustModal(false)} 
-                  >
-                    Annuler
-                  </button>
-                  <button 
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-amber-500 text-black hover:bg-amber-400"
-                    onClick={handleAdjust} 
-                    disabled={adjLoading}
-                  >
-                    {adjLoading ? 'Traitement...' : 'Confirmer'}
-                  </button>
-                </div>
-              </div>
-            </ModalShell>
-          )}
-
           {/* Delete Modal */}
           {showDeleteModal && deleteTarget && (
             <ModalShell title="Confirmer la suppression" onClose={() => setShowDeleteModal(false)}>
               <div className="space-y-3">
-                <p className="text-sm text-slate-300">Êtes-vous sûr de vouloir supprimer <span className="text-white font-medium">{deleteTarget.product_nom}</span> du stock ?</p>
+                <p className="text-sm text-slate-300">Êtes-vous sûr de vouloir supprimer <span className="text-white font-medium">{deleteTarget.product_nom}</span> et ses stocks ? Si ce produit est lié à un historique, il sera archivé pour préserver ces données.</p>
                 <div className="flex gap-2 justify-end pt-1">
                   <button
                     className="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -741,49 +637,6 @@ const StockPanel: React.FC = () => {
                     disabled={deleteLoading}
                   >
                     {deleteLoading ? 'Suppression...' : 'Supprimer'}
-                  </button>
-                </div>
-              </div>
-            </ModalShell>
-          )}
-
-          {/* Portion Consumption Modal */}
-          {showPortionModal && portionTarget && (
-            <ModalShell title="Consommer une portion" onClose={() => setShowPortionModal(false)}>
-              <div className="space-y-3">
-                <p className="text-sm text-slate-400">Produit: <span className="text-white font-medium">{portionTarget.product_nom}</span></p>
-                <p className="text-sm text-slate-400">Stock actuel: <span className="text-white font-medium">{Number(portionTarget.quantite).toFixed(2)} {portionTarget.unite}</span></p>
-                <div>
-                  <label className="block text-sm text-slate-400 mb-1">Taille de la portion (g)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={portionSize}
-                    onChange={e => setPortionSize(Number(e.target.value))}
-                    className="w-full h-9 px-3 bg-slate-800 border border-slate-700/50 rounded-xl text-slate-300 text-sm focus:outline-none"
-                    placeholder="Ex: 150"
-                  />
-                </div>
-                {portionSize > 0 && (
-                  <p className="text-sm text-slate-400">
-                    Stock restant après consommation: <span className="text-white font-medium">{Math.max(0, Number(portionTarget.quantite) - portionSize).toFixed(2)} {portionTarget.unite}</span>
-                  </p>
-                )}
-                {portionErr && <p className="text-red-400 text-sm">{portionErr}</p>}
-                <div className="flex gap-2 justify-end pt-1">
-                  <button
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-800 text-slate-300 hover:bg-slate-700"
-                    onClick={() => setShowPortionModal(false)}
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-amber-500 text-black hover:bg-amber-400"
-                    onClick={handleConsumePortion}
-                    disabled={portionLoading || portionSize <= 0}
-                  >
-                    {portionLoading ? 'Traitement...' : 'Consommer'}
                   </button>
                 </div>
               </div>
@@ -937,17 +790,17 @@ const AchatsPanel: React.FC = () => {
           <Truck size={16} className="text-accent" /> Gestion des Achats
         </h4>
         <div className="flex gap-2">
-          <button 
+          <button
             className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5"
             style={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-border)', color: 'var(--color-primary)' }}
-            onClick={() => setShowSupplierModal(true)} 
+            onClick={() => setShowSupplierModal(true)}
           >
             <Plus size={14} /> Nouveau fournisseur
           </button>
-          <button 
+          <button
             className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5"
             style={{ backgroundColor: 'var(--color-accent)', color: 'black' }}
-            onClick={() => setShowPurchaseModal(true)} 
+            onClick={() => setShowPurchaseModal(true)}
           >
             <Plus size={14} /> Nouvel achat
           </button>
@@ -980,7 +833,7 @@ const AchatsPanel: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-3 text-center">
-                    <button 
+                    <button
                       className="text-xs text-muted hover:text-primary"
                       onClick={() => { setSelectedPurchase(p); setShowDetailModal(true); }}
                     >
@@ -1003,8 +856,8 @@ const AchatsPanel: React.FC = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-secondary mb-1">Fournisseur <span className="text-danger">*</span></label>
-              <select 
-                value={supplierId} 
+              <select
+                value={supplierId}
                 onChange={e => setSupplierId(Number(e.target.value) || '')}
                 className={inputClass} style={inputStyle}
               >
@@ -1017,8 +870,8 @@ const AchatsPanel: React.FC = () => {
               {lines.map((l, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 items-end">
                   <div className="col-span-4">
-                    <select 
-                      value={l.product_id} 
+                    <select
+                      value={l.product_id}
                       onChange={e => updateLine(i, 'product_id', e.target.value)}
                       className={inputClass} style={inputStyle}
                     >
@@ -1027,8 +880,8 @@ const AchatsPanel: React.FC = () => {
                     </select>
                   </div>
                   <div className="col-span-3">
-                    <select 
-                      value={l.location_id} 
+                    <select
+                      value={l.location_id}
                       onChange={e => updateLine(i, 'location_id', e.target.value)}
                       className={inputClass} style={inputStyle}
                     >
@@ -1037,21 +890,21 @@ const AchatsPanel: React.FC = () => {
                     </select>
                   </div>
                   <div className="col-span-2">
-                    <input 
+                    <input
                       type="number" min="0.01" step="any" placeholder="Qté"
                       value={l.quantite || ''} onChange={e => updateLine(i, 'quantite', Number(e.target.value))}
                       className={inputClass} style={inputStyle}
                     />
                   </div>
                   <div className="col-span-2">
-                    <input 
+                    <input
                       type="number" min="0" step="any" placeholder="Prix"
                       value={l.prix_unitaire || ''} onChange={e => updateLine(i, 'prix_unitaire', Number(e.target.value))}
                       className={inputClass} style={inputStyle}
                     />
                   </div>
                   <div className="col-span-1">
-                    <button 
+                    <button
                       onClick={() => setLines(prev => prev.filter((_, idx) => idx !== i))}
                       className="w-full h-9 rounded-lg text-danger bg-danger-bg flex items-center justify-center"
                     >
@@ -1060,7 +913,7 @@ const AchatsPanel: React.FC = () => {
                   </div>
                 </div>
               ))}
-              <button 
+              <button
                 onClick={() => setLines(prev => [...prev, { product_id: '', location_id: '', quantite: 0, prix_unitaire: 0 }])}
                 className="text-xs text-accent hover:underline"
               >
@@ -1073,18 +926,18 @@ const AchatsPanel: React.FC = () => {
             </div>
             {purchaseErr && <p className="text-xs text-danger">{purchaseErr}</p>}
             <div className="flex gap-2 justify-end pt-1">
-              <button 
+              <button
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
                 style={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-border)', color: 'var(--color-primary)' }}
-                onClick={() => setShowPurchaseModal(false)} 
+                onClick={() => setShowPurchaseModal(false)}
                 disabled={purchaseLoading}
               >
                 Annuler
               </button>
-              <button 
+              <button
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
                 style={{ backgroundColor: 'var(--color-accent)', color: 'black' }}
-                onClick={handlePurchase} 
+                onClick={handlePurchase}
                 disabled={purchaseLoading}
               >
                 {purchaseLoading ? 'Création…' : 'Créer'}
@@ -1100,7 +953,7 @@ const AchatsPanel: React.FC = () => {
           <div className="space-y-3">
             <div>
               <label className="block text-sm text-secondary mb-1">Nom <span className="text-danger">*</span></label>
-              <input 
+              <input
                 type="text" placeholder="Ex: Metro Cash & Carry"
                 value={supNom} onChange={e => setSupNom(e.target.value)}
                 className={inputClass} style={inputStyle}
@@ -1108,7 +961,7 @@ const AchatsPanel: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm text-secondary mb-1">Téléphone</label>
-              <input 
+              <input
                 type="tel" placeholder="Ex: +261 34 00 000 00"
                 value={supTel} onChange={e => setSupTel(e.target.value)}
                 className={inputClass} style={inputStyle}
@@ -1116,7 +969,7 @@ const AchatsPanel: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm text-secondary mb-1">Email</label>
-              <input 
+              <input
                 type="email" placeholder="Ex: contact@fournisseur.mg"
                 value={supEmail} onChange={e => setSupEmail(e.target.value)}
                 className={inputClass} style={inputStyle}
@@ -1124,18 +977,18 @@ const AchatsPanel: React.FC = () => {
             </div>
             {supErr && <p className="text-xs text-danger">{supErr}</p>}
             <div className="flex gap-2 justify-end pt-1">
-              <button 
+              <button
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
                 style={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-border)', color: 'var(--color-primary)' }}
-                onClick={() => setShowSupplierModal(false)} 
+                onClick={() => setShowSupplierModal(false)}
                 disabled={supLoading}
               >
                 Annuler
               </button>
-              <button 
+              <button
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
                 style={{ backgroundColor: 'var(--color-accent)', color: 'black' }}
-                onClick={handleSupplier} 
+                onClick={handleSupplier}
                 disabled={supLoading}
               >
                 {supLoading ? 'Création…' : 'Créer'}

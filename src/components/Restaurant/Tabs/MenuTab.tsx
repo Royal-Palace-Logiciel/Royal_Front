@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Badge, Button } from '../../UI';
 import { formatCurrency } from '../../../utils/data';
 import { Plus, Edit, Trash2, Search, UtensilsCrossed } from 'lucide-react';
+import { getRestaurantProductColors } from '../../../utils/restaurantProductColors';
 import type { Product, Category } from '../types';
 
 interface MenuTabProps {
@@ -29,8 +30,7 @@ export const MenuTab: React.FC<MenuTabProps> = ({
   // Charger les couleurs du localStorage au chargement et à chaque modification
   useEffect(() => {
     const loadColors = () => {
-      const saved = JSON.parse(localStorage.getItem('hda_product_colors') || '{}');
-      setProductColors(saved);
+      setProductColors(getRestaurantProductColors());
     };
     loadColors();
     window.addEventListener('storage', loadColors);

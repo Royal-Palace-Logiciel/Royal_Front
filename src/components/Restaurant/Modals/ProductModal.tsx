@@ -1,9 +1,22 @@
 // src/components/Restaurant/Modals/ProductModal.tsx
 import React, { useState, useEffect } from 'react';
-import { Modal, Input, Select, Button } from '../../UI';
+import { Modal, Input, Button } from '../../UI';
 import { useToast } from '../../../context/ToastContext';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 import * as restaurantService from '../../../services/restaurantService';
 import type { Category, Product } from '../types';
+
+interface StockIngredient {
+  product_id: number;
+  product_nom: string;
+  unite: string;
+  quantite: number;
+}
+
+interface RecipeIngredientDraft {
+  ingredient_id: string;
+  quantite: string;
+}
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -28,11 +41,6 @@ const isSimilarProductName = (first: string, second: string) => {
   return Boolean(firstName && secondName && firstName === secondName);
 };
 
-const isOtherCategory = (name: string) => {
-  const normalizedName = normalizeProductName(name);
-  return normalizedName === 'autre' || normalizedName === 'autres';
-};
-
 export const ProductModal: React.FC<ProductModalProps> = ({
   isOpen,
   onClose,
@@ -44,49 +52,45 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 }) => {
   const { showToast } = useToast();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [isCustomCategory, setIsCustomCategory] = useState(false);
-  const [customCategory, setCustomCategory] = useState('');
+  const [categoryName, setCategoryName] = useState('');
+  const [stockIngredients, setStockIngredients] = useState<StockIngredient[]>([]);
+  const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredientDraft[]>([]);
+  const [ingredientsLoading, setIngredientsLoading] = useState(false);
+  const [ingredientsError, setIngredientsError] = useState<string | null>(null);
   const [codePreviewError, setCodePreviewError] = useState<string | null>(null);
   const [form, setForm] = useState({
     nom: '',
     code: '',
     category_id: 0,
     prix_vente: 0,
-    prix_achat: 0,
-    unite: 'PIECE',
     type_produit: 'PRODUIT_FINI' as const,
-    actif: true,
-    couleur: ''
+    actif: true
   });
 
   useEffect(() => {
     if (!isOpen) return;
     setSubmissionError(null);
-    setIsCustomCategory(false);
-    setCustomCategory('');
+    setCategoryName(editingProduct
+      ? categories.find((category) => category.id === editingProduct.category_id)?.nom || ''
+      : '');
+    setRecipeIngredients([]);
     if (editingProduct) {
       setForm({
         nom: editingProduct.nom || '',
         code: editingProduct.code || '',
         category_id: editingProduct.category_id || 0,
         prix_vente: editingProduct.prix_vente || 0,
-        prix_achat: editingProduct.prix_achat || 0,
-        unite: editingProduct.unite || 'PIECE',
         type_produit: (editingProduct.type_produit || 'PRODUIT_FINI') as any,
-        actif: editingProduct.actif ?? true,
-        couleur: editingProduct.couleur || '' // Récupère la couleur depuis la BDD
+        actif: editingProduct.actif ?? true
       });
     } else {
       setForm({
         nom: '',
         code: '',
-        category_id: categories[0]?.id || 0,
+        category_id: 0,
         prix_vente: 0,
-        prix_achat: 0,
-        unite: 'PIECE',
         type_produit: 'PRODUIT_FINI',
-        actif: true,
-        couleur: ''
+        actif: true
       });
     }
     if (editingProduct) {
@@ -109,13 +113,66 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     return () => { cancelled = true; };
   }, [isOpen, editingProduct]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const loadIngredients = async () => {
+      setIngredientsLoading(true);
+      setIngredientsError(null);
+      try {
+        const locationsResponse = await restaurantService.getStockLocations();
+        if (!locationsResponse.success || !Array.isArray(locationsResponse.data)) {
+          throw new Error(locationsResponse.message || 'Impossible de charger les emplacements de stock.');
+        }
+        const restaurantLocation = locationsResponse.data.find(
+          (location: { nom: string }) => location.nom.toLowerCase().includes('restaurant')
+        );
+        if (!restaurantLocation) {
+          throw new Error('Aucun emplacement de stock Restaurant n’a été trouvé.');
+        }
+
+        const [stockResponse, recipeResponse] = await Promise.all([
+          restaurantService.getStocks({
+            location_id: restaurantLocation.id,
+            type_produit: 'MATIERE_PREMIERE',
+          }),
+          editingProduct
+            ? restaurantService.getProductRecipe(editingProduct.id)
+            : Promise.resolve({ success: true, data: [] as restaurantService.RestaurantRecipeIngredient[] }),
+        ]);
+        if (!stockResponse.success || !Array.isArray(stockResponse.data)) {
+          throw new Error(stockResponse.message || 'Impossible de charger les ingrédients du stock Restaurant.');
+        }
+        if (!recipeResponse.success || !Array.isArray(recipeResponse.data)) {
+          throw new Error(recipeResponse.message || 'Impossible de charger la recette du plat.');
+        }
+        if (cancelled) return;
+
+        setStockIngredients(stockResponse.data);
+        setRecipeIngredients(recipeResponse.data.map((ingredient) => ({
+          ingredient_id: String(ingredient.ingredient_id),
+          quantite: String(ingredient.quantite),
+        })));
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Erreur lors du chargement des ingrédients du restaurant:', error);
+        setIngredientsError(error instanceof Error ? error.message : 'Impossible de charger les ingrédients.');
+      } finally {
+        if (!cancelled) setIngredientsLoading(false);
+      }
+    };
+    void loadIngredients();
+    return () => { cancelled = true; };
+  }, [isOpen, editingProduct]);
+
   const handleSubmit = async () => {
     if (!form.nom.trim()) return;
-    if (isCustomCategory && !customCategory.trim()) {
-      showToast('Saisissez le nom de la catégorie personnalisée.', 'error');
+    if (recipeIngredients.some((ingredient) =>
+      !ingredient.ingredient_id || !Number.isFinite(Number(ingredient.quantite)) || Number(ingredient.quantite) <= 0
+    )) {
+      showToast('Choisissez un ingrédient et saisissez une quantité positive pour chaque ligne.', 'error');
       return;
     }
-    if (!isCustomCategory && !form.category_id) return;
 
     if (!editingProduct) {
       const matches = products.filter((product) =>
@@ -129,13 +186,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     setSubmissionError(null);
 
     try {
-      let categoryId = form.category_id;
-      if (isCustomCategory) {
-        const normalizedCustomName = normalizeProductName(customCategory);
+      let categoryId: number | null = null;
+      if (categoryName.trim()) {
+        const normalizedCategoryName = normalizeProductName(categoryName);
         const existingCategory = categories.find(
-          (category) => normalizeProductName(category.nom) === normalizedCustomName
+          (category) => normalizeProductName(category.nom) === normalizedCategoryName
         );
-        const category = existingCategory || await onCreateCategory(customCategory.trim());
+        const category = existingCategory || await onCreateCategory(categoryName.trim());
         categoryId = category.id;
       }
 
@@ -144,11 +201,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         code: form.code,
         category_id: categoryId,
         prix_vente: form.prix_vente,
-        prix_achat: form.prix_achat,
-        unite: form.unite,
+        unite: editingProduct?.unite || 'PIECE',
         type_produit: form.type_produit,
         actif: form.actif,
-        couleur: form.couleur
+        ingredients: recipeIngredients.map((ingredient) => ({
+          ingredient_id: Number(ingredient.ingredient_id),
+          quantite: Number(ingredient.quantite),
+        }))
       };
 
       if (editingProduct) payload.id = editingProduct.id;
@@ -191,45 +250,14 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         />
         {codePreviewError && <p className="text-xs text-muted">{codePreviewError}</p>}
 
-        <Select
-          label="Catégorie"
-          value={isCustomCategory ? '__other__' : form.category_id.toString()}
-          onChange={(e) => {
-            const isOther = e.target.value === '__other__';
-            setIsCustomCategory(isOther);
-            if (!isOther) setCustomCategory('');
-            setForm({ ...form, category_id: isOther ? 0 : Number(e.target.value) });
-          }}
-          options={[
-            { value: '0', label: 'Sélectionner une catégorie' },
-            ...categories
-              .filter((category) => !isOtherCategory(category.nom))
-              .map(c => ({ value: c.id.toString(), label: c.nom })),
-            { value: '__other__', label: 'Autres' }
-          ]}
+        <Input
+          label="Catégorie (facultatif)"
+          value={categoryName}
+          onChange={(e) => setCategoryName(e.target.value)}
+          placeholder="Ex: Pizza"
         />
-        {isCustomCategory && (
-          <div className="rounded-xl border border-accent/30 bg-accent/5 p-3">
-            <Input
-              autoFocus
-              label="Nouvelle catégorie"
-              value={customCategory}
-              onChange={(e) => setCustomCategory(e.target.value)}
-              placeholder="Saisir le nom de la catégorie"
-            />
-          </div>
-        )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label="Prix d'achat (MGA)"
-            type="number"
-            value={form.prix_achat}
-            onChange={(e) => setForm({ ...form, prix_achat: Number(e.target.value) })}
-            placeholder="0"
-            min={0}
-            step={1000}
-          />
+        <div className="grid grid-cols-1 gap-4">
           <Input
             label="Prix de vente (MGA)"
             type="number"
@@ -241,58 +269,96 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           />
         </div>
 
-        <Select
-          label="Unité"
-          value={form.unite}
-          onChange={(e) => setForm({ ...form, unite: e.target.value })}
-          options={[
-            { value: 'PIECE', label: 'Pièce' },
-            { value: 'KG', label: 'Kilogramme' },
-            { value: 'G', label: 'Gramme' },
-            { value: 'L', label: 'Litre' },
-            { value: 'ML', label: 'Millilitre' },
-            { value: 'PORTION', label: 'Portion' },
-          ]}
-        />
-
-        {/* SÉLECTEUR DE COULEUR PERSONNALISABLE */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-secondary block">
-            Couleur de fond personnalisée
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={form.couleur || '#3b82f6'}
-              onChange={(e) => setForm({ ...form, couleur: e.target.value })}
-              className="w-12 h-11 rounded-xl cursor-pointer bg-transparent border p-1"
-              style={{ borderColor: 'var(--color-border)' }}
-              title="Choisir une couleur"
-            />
-            <input
-              type="text"
-              value={form.couleur}
-              onChange={(e) => setForm({ ...form, couleur: e.target.value })}
-              placeholder="Ex: #3b82f6 ou vide pour défaut"
-              className="flex-1 h-11 px-4 rounded-xl text-sm transition-all"
-              style={{
-                backgroundColor: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                color: 'var(--color-primary)',
-                outline: 'none',
-              }}
-            />
-            {form.couleur && (
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, couleur: '' })}
-                className="text-xs text-amber-500 hover:underline px-2 py-1 font-medium whitespace-nowrap"
-              >
-                Effacer
-              </button>
-            )}
+        <section className="space-y-3 rounded-xl border border-slate-700/70 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h4 className="text-sm font-semibold text-primary">Ingrédients du plat</h4>
+              <p className="text-xs text-subtle">
+                Sélectionnez les ingrédients disponibles dans le stock Restaurant et définissez la quantité nécessaire.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              icon={<Plus size={14} />}
+              onClick={() => setRecipeIngredients((current) => [...current, { ingredient_id: '', quantite: '' }])}
+            >
+              Ajouter
+            </Button>
           </div>
-        </div>
+
+          {ingredientsLoading && (
+            <p className="flex items-center gap-2 text-xs text-subtle">
+              <Loader2 size={14} className="animate-spin" /> Chargement des ingrédients...
+            </p>
+          )}
+          {ingredientsError && <p role="alert" className="text-xs text-red-400">{ingredientsError}</p>}
+          {!ingredientsLoading && !ingredientsError && stockIngredients.length === 0 && (
+            <p className="text-xs text-subtle">Aucun ingrédient disponible dans le stock Restaurant.</p>
+          )}
+
+          {recipeIngredients.map((ingredient, index) => {
+            const selectedIngredient = stockIngredients.find(
+              (item) => String(item.product_id) === ingredient.ingredient_id
+            );
+            const usedIds = new Set(recipeIngredients
+              .filter((_, ingredientIndex) => ingredientIndex !== index)
+              .map((item) => item.ingredient_id));
+            return (
+              <div key={index} className="grid grid-cols-1 gap-2 rounded-lg bg-slate-800/70 p-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(90px,0.7fr)_minmax(90px,0.9fr)_36px] sm:items-end">
+                <label className="space-y-1 text-xs font-medium text-secondary">
+                  <span>Ingrédient</span>
+                  <select
+                    value={ingredient.ingredient_id}
+                    onChange={(event) => setRecipeIngredients((current) => current.map((item, itemIndex) =>
+                      itemIndex === index ? { ...item, ingredient_id: event.target.value } : item
+                    ))}
+                    className="h-11 w-full rounded-xl border border-slate-700/50 bg-slate-900 px-3 text-sm text-white"
+                  >
+                    <option value="">Sélectionner un ingrédient</option>
+                    {stockIngredients
+                      .filter((item) => !usedIds.has(String(item.product_id)))
+                      .map((item) => (
+                        <option key={item.product_id} value={item.product_id}>
+                          {item.product_nom} — {Number(item.quantite)} {item.unite} en stock
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <Input
+                  label="Quantité"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={ingredient.quantite}
+                  onChange={(event) => setRecipeIngredients((current) => current.map((item, itemIndex) =>
+                    itemIndex === index ? { ...item, quantite: event.target.value } : item
+                  ))}
+                  placeholder="0"
+                />
+                <label className="space-y-1 text-xs font-medium text-secondary">
+                  <span>Unité</span>
+                  <input
+                    readOnly
+                    value={selectedIngredient?.unite || ''}
+                    placeholder="Choisir"
+                    className="h-11 w-full rounded-xl border border-slate-700/50 bg-slate-900 px-3 text-sm text-white"
+                  />
+                </label>
+                <button
+                  type="button"
+                  aria-label="Supprimer cet ingrédient"
+                  title="Supprimer cet ingrédient"
+                  onClick={() => setRecipeIngredients((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                  className="flex h-9 items-center justify-center rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            );
+          })}
+        </section>
 
         <div className="flex items-center gap-3 pt-1">
           <input
@@ -306,7 +372,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
-          <Button onClick={handleSubmit} className="flex-1" disabled={!form.nom.trim() || (isCustomCategory ? !customCategory.trim() : !form.category_id)}>
+          <Button
+            onClick={handleSubmit}
+            className="flex-1"
+            disabled={!form.nom.trim() || ingredientsLoading || Boolean(ingredientsError)}
+          >
             {editingProduct ? 'Modifier' : 'Ajouter'}
           </Button>
         </div>
