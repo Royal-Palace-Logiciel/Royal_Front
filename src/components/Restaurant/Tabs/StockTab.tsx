@@ -544,17 +544,18 @@ const StockPanel: React.FC = () => {
           {showAddModal && (
             <ModalShell title="Ajouter un produit" onClose={() => { setShowAddModal(false); setForm({ nom: '', category_id: '', subcategory_id: '', type_produit: 'MATIERE_PREMIERE', unite: '', uniteCustom: '', prix_achat: 0, prix_vente: 0, quantite: 0, portion_size: 0, portion_unite: 'g' }); }}>
               <div className="space-y-4">
-                <Input label="Nom du produit" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} placeholder="Ex: Poulet 200g" required />
-                <Input label="Prix d'achat (MGA)" type="number" min="0.01" value={form.prix_achat} onChange={e => setForm({ ...form, prix_achat: Number(e.target.value) })} required />
+                <Input label="Nom du produit" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} placeholder="Ex: Poulet 200g" required className="!text-black" />
+                <Input label="Prix d'achat (MGA)" type="number" min="0.01" value={form.prix_achat} onChange={e => setForm({ ...form, prix_achat: Number(e.target.value) })} required className="!text-black" />
                 <Select
                   label="Unité"
                   value={form.unite}
                   onChange={e => setForm({ ...form, unite: e.target.value })}
                   options={[{ value: '', label: 'Choisir une unité' }, ...ingredientUnits]}
                   required
+                  className="!text-black"
                 />
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="Quantité initiale" type="number" min="0.01" value={form.quantite} onChange={e => setForm({ ...form, quantite: Number(e.target.value) })} required />
+                  <Input label="Quantité initiale" type="number" min="0.01" value={form.quantite} onChange={e => setForm({ ...form, quantite: Number(e.target.value) })} required className="!text-black" />
                 </div>
                 {addErr && <p className="text-red-400 text-sm">{addErr}</p>}
                 <div className="flex gap-3 pt-2">
