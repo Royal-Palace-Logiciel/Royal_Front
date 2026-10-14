@@ -1,10 +1,11 @@
 // src/components/Restaurant/Tabs/MenuTab.tsx
 import React, { useState, useEffect } from 'react';
-import { Badge, Button } from '../../UI';
+import { Badge, Button, Modal } from '../../UI';
 import { formatCurrency } from '../../../utils/data';
-import { Plus, Edit, Trash2, Search, UtensilsCrossed } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, UtensilsCrossed, Eye, X, Loader2 } from 'lucide-react';
 import { getRestaurantProductColors } from '../../../utils/restaurantProductColors';
 import type { Product, Category } from '../types';
+import * as restaurantService from '../../../services/restaurantService';
 
 interface MenuTabProps {
   products: Product[];
@@ -26,6 +27,10 @@ export const MenuTab: React.FC<MenuTabProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<number | 'tous'>('tous');
   const [searchTerm, setSearchTerm] = useState('');
   const [productColors, setProductColors] = useState<Record<string, string>>({});
+  const [showIngredientsModal, setShowIngredientsModal] = useState(false);
+  const [selectedProductIngredients, setSelectedProductIngredients] = useState<any[]>([]);
+  const [ingredientsLoading, setIngredientsLoading] = useState(false);
+  const [ingredientsError, setIngredientsError] = useState<string | null>(null);
 
   // Charger les couleurs du localStorage au chargement et à chaque modification
   useEffect(() => {
@@ -47,6 +52,27 @@ export const MenuTab: React.FC<MenuTabProps> = ({
       (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
+
+  const handleViewIngredients = async (product: Product) => {
+    setShowIngredientsModal(true);
+    setIngredientsLoading(true);
+    setIngredientsError(null);
+    setSelectedProductIngredients([]);
+
+    try {
+      const response = await restaurantService.getProductRecipe(product.id);
+      if (response.success) {
+        setSelectedProductIngredients(response.data);
+      } else {
+        setIngredientsError(response.message || 'Impossible de charger les ingrédients');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des ingrédients:', error);
+      setIngredientsError('Erreur lors du chargement des ingrédients');
+    } finally {
+      setIngredientsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6 w-full">
@@ -227,6 +253,9 @@ export const MenuTab: React.FC<MenuTabProps> = ({
                         {/* Boutons Modifier/Supprimer affichés uniquement si l'utilisateur est admin */}
                         {userIsAdmin && (
                           <div className="flex items-center gap-1.5">
+                            <Button size="sm" variant="secondary" onClick={() => handleViewIngredients(p)} title="Voir les ingrédients">
+                              <Eye size={14} />
+                            </Button>
                             <Button size="sm" variant="secondary" onClick={() => onEditProduct(p)} title="Modifier">
                               <Edit size={14} />
                             </Button>
@@ -247,6 +276,56 @@ export const MenuTab: React.FC<MenuTabProps> = ({
 
         </div>
       </div>
+
+      {/* Modal pour afficher les ingrédients */}
+      <Modal
+        isOpen={showIngredientsModal}
+        onClose={() => setShowIngredientsModal(false)}
+        title="Ingrédients du plat"
+        size="md"
+      >
+        <div className="space-y-4">
+          {ingredientsLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="animate-spin text-amber-400 mr-2" size={20} />
+              <span className="text-slate-400 text-sm">Chargement des ingrédients...</span>
+            </div>
+          )}
+
+          {ingredientsError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 text-sm">
+              {ingredientsError}
+            </div>
+          )}
+
+          {!ingredientsLoading && !ingredientsError && selectedProductIngredients.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-slate-400 text-sm">Ce plat ne contient pas d'ingrédients.</p>
+            </div>
+          )}
+
+          {!ingredientsLoading && !ingredientsError && selectedProductIngredients.length > 0 && (
+            <div className="space-y-2">
+              {selectedProductIngredients.map((ingredient, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center p-3 rounded-lg"
+                  style={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}
+                >
+                  <span className="text-primary text-sm">{ingredient.product_nom || ingredient.nom}</span>
+                  <span className="text-slate-400 text-sm font-medium">
+                    {Number(ingredient.quantite).toFixed(2)} {ingredient.unite}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => setShowIngredientsModal(false)}>Fermer</Button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );
