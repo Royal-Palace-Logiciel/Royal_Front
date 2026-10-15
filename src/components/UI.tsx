@@ -201,7 +201,7 @@ export const Button: React.FC<ButtonProps> = ({
   children, variant = 'primary', size = 'md', icon, className = '', ...props 
 }) => {
   const variants = {
-    primary: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-semibold shadow-lg shadow-amber-500/20',
+    primary: 'app-button-primary font-semibold',
     secondary: 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700/50',
     danger: 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white',
     ghost: 'bg-transparent hover:bg-slate-800 text-slate-400 hover:text-white'

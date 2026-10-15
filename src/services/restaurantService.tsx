@@ -200,7 +200,7 @@ export const createProduct = (data: {
   type_produit?: string;
   prix_achat?: number;
   prix_vente?: number;
-  category_id?: number;
+  category_id?: number | null;
   subcategory_id?: number;
   portion_size?: number;
   portion_unite?: string;
@@ -213,9 +213,25 @@ export const getNextRestaurantProductCode = () =>
 // ==================== PRODUITS ====================
 export const updateProduct = (id: number, data: Partial<{
   nom: string; unite: string; prix_achat: number; prix_vente: number;
-  actif: boolean; type_produit: string; category_id: number;
+  actif: boolean; type_produit: string; category_id: number | null;
 }>) =>
   api.put(`/api/restaurant/products/${id}`, data).then(res => res.data);
+
+export interface RestaurantRecipeIngredient {
+  ingredient_id: number;
+  quantite: number;
+  ingredient_nom?: string;
+  unite?: string;
+}
+
+export const getProductRecipe = (id: number) =>
+  api.get<ApiResponse<RestaurantRecipeIngredient[]>>(`/api/restaurant/products/${id}/recipe`).then(res => res.data);
+
+export const saveProductRecipe = (id: number, ingredients: RestaurantRecipeIngredient[]) =>
+  api.put<ApiResponse<{ product_id: number; ingredients: RestaurantRecipeIngredient[] }>>(
+    `/api/restaurant/products/${id}/recipe`,
+    { ingredients }
+  ).then(res => res.data);
 
 export const deleteProduct = (id: number) =>
   api.delete(`/api/restaurant/products/${id}`).then(res => res.data);

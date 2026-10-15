@@ -387,6 +387,7 @@ export const StockManager: React.FC<StockManagerProps> = ({ module, categories, 
             onChange={e => setForm({...form, product_name: e.target.value})}
             disabled={Boolean(editItem && !isHotel)}
             placeholder="Ex: Serviette, Savon, Produit..."
+            className="!text-black"
           />
           <Select
             label="Catégorie"
@@ -394,6 +395,7 @@ export const StockManager: React.FC<StockManagerProps> = ({ module, categories, 
             onChange={e => setForm({...form, categorie: e.target.value})}
             disabled={Boolean(editItem && !isHotel)}
             options={[...new Set([...categories, ...(form.categorie ? [form.categorie] : [])])].map(c => ({ value: c, label: c }))}
+            className="!text-black"
           />
           <Input
             label="Prix unitaire (MGA)"
@@ -404,6 +406,7 @@ export const StockManager: React.FC<StockManagerProps> = ({ module, categories, 
             onChange={e => setForm({...form, prix: Number(e.target.value) || 0})}
             disabled={Boolean(editItem && !isHotel)}
             placeholder="0"
+            className="!text-black"
           />
 
           <div className="grid grid-cols-2 gap-4">
@@ -415,6 +418,7 @@ export const StockManager: React.FC<StockManagerProps> = ({ module, categories, 
               value={form.quantite} 
               onChange={e => setForm({...form, quantite: isHotel ? Math.max(0, Math.floor(Number(e.target.value) || 0)) : Number(e.target.value) || 0})}
               placeholder="0" 
+              className="!text-black"
             />
             <Select 
               label="Unité" 
@@ -422,6 +426,7 @@ export const StockManager: React.FC<StockManagerProps> = ({ module, categories, 
               onChange={e => setForm({...form, unite: e.target.value})} 
               disabled={Boolean(editItem && !isHotel)}
               options={uniteOptions} 
+              className="!text-black"
             />
           </div>
 
@@ -434,6 +439,7 @@ export const StockManager: React.FC<StockManagerProps> = ({ module, categories, 
             onChange={e => setForm({...form, seuil_minimum: Math.max(0, Math.floor(Number(e.target.value) || 0))})}
             disabled={Boolean(editItem && !isHotel)}
             placeholder="5" 
+            className="!text-black"
           />
           {editItem && !isHotel && (
             <p className="text-xs text-slate-400">Dans ce module, seule la quantité de stock est modifiée.</p>

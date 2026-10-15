@@ -58,6 +58,12 @@
   --shadow-accent: 0 4px 20px rgba(168, 123, 34, 0.18);
   /* ombre dorée subtile */
 
+  --button-primary-start: #f59e0b;
+  --button-primary-end: #f97316;
+  --button-primary-hover-start: #fbbf24;
+  --button-primary-hover-end: #f97316;
+  --button-primary-text: #0f172a;
+
   /* Palettes Tailwind neutres inversées : les classes conçues pour l'ancien
      thème sombre (bg-slate-800, border-gray-700, text-slate-300, variantes /50…)
      deviennent automatiquement claires. */
@@ -134,6 +140,20 @@
   --color-pink-400: #db2777;
   --color-rose-300: #be123c;
   --color-rose-400: #e11d48;
+}
+
+body.restaurant-theme {
+  --color-accent: #e11d48;
+  --color-accent-2: #be123c;
+  --color-accent-3: #fb7185;
+  --color-accent-4: rgba(225, 29, 72, 0.12);
+  --shadow-accent: 0 4px 20px rgba(225, 29, 72, 0.2);
+
+  --button-primary-start: #e11d48;
+  --button-primary-end: #e11d48;
+  --button-primary-hover-start: #be123c;
+  --button-primary-hover-end: #be123c;
+  --button-primary-text: #ffffff;
 }
 
 /* ===== CLASSES UTILITAIRES CUSTOM ===== */
@@ -443,6 +463,16 @@ select:focus {
   color: #ffffff !important;
   border: none !important;
   transition: all 0.2s ease;
+}
+
+.app-button-primary {
+  background: linear-gradient(90deg, var(--button-primary-start), var(--button-primary-end)) !important;
+  color: var(--button-primary-text) !important;
+  box-shadow: var(--shadow-accent) !important;
+}
+
+.app-button-primary:hover:not(:disabled) {
+  background: linear-gradient(90deg, var(--button-primary-hover-start), var(--button-primary-hover-end)) !important;
 }
 
 .btn-primary:hover {
