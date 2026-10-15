@@ -92,7 +92,7 @@ export interface Reservation {
   remise_validee_par?: number | null;
   remise_validee_at?: string | null;
   statut: 'EN_ATTENTE' | 'CONFIRMEE' | 'CHECKED_IN' | 'EN_COURS' | 'ANNULEE' | 'TERMINEE' | 'NO_SHOW';
-  type_reservation?: 'BOOKING' | 'ON_SITE';
+  type_reservation?: 'BOOKING' | 'ON_SITE' | 'GRATUIT';
   laundry_included?: boolean;
   laundry_price?: number;
   manual_price?: number;

@@ -28,6 +28,13 @@ import { roomTypeService } from '../../services/room.service';
 import { housekeepingService } from '../../services/housekeeping.service';
 import { maintenanceService } from '../../services/maintenance.service';
 
+const getDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 interface RoomListProps {
   rooms?: Room[];
   onEdit?: (room: Room) => void;
@@ -63,6 +70,15 @@ export const RoomList: React.FC<RoomListProps> = ({ onEdit, onDelete, refreshTri
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [isNavigationModalOpen, setIsNavigationModalOpen] = useState(false);
   const [navigationRoom, setNavigationRoom] = useState<Room | null>(null);
+  const [today, setToday] = useState(() => getDateKey(new Date()));
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const currentDate = getDateKey(new Date());
+      setToday(previousDate => previousDate === currentDate ? previousDate : currentDate);
+    }, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   // États pour la recherche et le filtrage
   const [searchTerm, setSearchTerm] = useState('');
@@ -100,17 +116,13 @@ export const RoomList: React.FC<RoomListProps> = ({ onEdit, onDelete, refreshTri
 
   // Get current or upcoming reservation for a room
   const getRoomReservation = (roomId: number): Reservation | null => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Find reservations for this room that are active or upcoming
-    const roomReservations = reservations.filter(res => 
-      res.room_id === roomId && 
-      !['ANNULEE', 'NO_SHOW'].includes(res.statut) &&
-      new Date(res.date_depart) >= today
-    ).sort((a, b) => new Date(a.date_arrivee).getTime() - new Date(b.date_arrivee).getTime());
-    
-    return roomReservations.length > 0 ? roomReservations[0] : null;
+    const roomReservations = reservations.filter(res =>
+      res.room_id === roomId &&
+      !['ANNULEE', 'NO_SHOW', 'TERMINEE'].includes(res.statut) &&
+      res.date_depart.slice(0, 10) > today
+    ).sort((a, b) => a.date_arrivee.localeCompare(b.date_arrivee));
+
+    return roomReservations[0] || null;
   };
 
   // Format date range for display (e.g., "Oct 8 to Oct 15")
@@ -129,10 +141,15 @@ export const RoomList: React.FC<RoomListProps> = ({ onEdit, onDelete, refreshTri
   };
 
   const getPrimaryRoomStatus = (room: Room): Room['statut'] => {
-    // These statuses are operational overlays; the room itself remains available.
-    if (room.statut === 'MAINTENANCE' && activeMaintenanceByRoom.has(room.id)) return 'LIBRE';
-    if (room.statut === 'NETTOYAGE' && getHousekeepingTask(room.id)) return 'LIBRE';
-    return room.statut;
+    if (room.statut !== 'LIBRE' && room.statut !== 'RESERVEE') return room.statut;
+
+    const reservation = getRoomReservation(room.id);
+    if (!reservation) return room.statut;
+
+    const arrivalDate = reservation.date_arrivee.slice(0, 10);
+    const departureDate = reservation.date_depart.slice(0, 10);
+    if (arrivalDate <= today && departureDate > today) return 'RESERVEE';
+    return room.statut === 'RESERVEE' ? 'LIBRE' : room.statut;
   };
 
   useEffect(() => {
@@ -308,7 +325,7 @@ export const RoomList: React.FC<RoomListProps> = ({ onEdit, onDelete, refreshTri
   };
 
   // Affichage du chargement
-  if (loading || loadingTypes) {
+  if (loading || loadingTypes || reservationsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader size={32} className="animate-spin text-accent" />
@@ -582,22 +599,22 @@ export const RoomList: React.FC<RoomListProps> = ({ onEdit, onDelete, refreshTri
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && roomToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black backdrop-blur-sm animate-fade-in">
-          <div className="bg dark:bg-surface-2 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-base-light dark:border-base-dark animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-base bg-surface p-6 shadow-2xl animate-scale-in">
             <div className="text-center">
               {/* Icône d'avertissement */}
-              <div className="w-16 h-16 rounded-full bg-danger/10 dark:bg-danger/20 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle size={32} className="text-danger" />
               </div>
 
-              <h3 className="text-xl font-bold text-primary-dark dark:text-primary-light mb-2">
+              <h3 className="text-xl font-bold text-primary mb-2">
                 Confirmer la suppression
               </h3>
 
-              <p className="text-muted dark:text-muted-light text-sm mb-2">
-                Êtes-vous sûr de vouloir supprimer la <strong className="text-primary-dark dark:text-primary-light">Chambre {roomToDelete.numero}</strong> ?
+              <p className="text-muted text-sm mb-2">
+                Êtes-vous sûr de vouloir supprimer la <strong className="text-primary">Chambre {roomToDelete.numero}</strong> ?
               </p>
-              <p className="text-danger/80 dark:text-danger/70 text-xs">
+              <p className="text-danger text-xs">
                 ⚠️ Cette action est irréversible et supprimera toutes les données associées.
               </p>
 
@@ -608,7 +625,7 @@ export const RoomList: React.FC<RoomListProps> = ({ onEdit, onDelete, refreshTri
                     setIsDeleteModalOpen(false);
                     setRoomToDelete(null);
                   }}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-base-light dark:border-base-dark text-primary-dark dark:text-primary-light font-medium text-sm hover:bg-surface-2 dark:hover:bg-surface-3 transition-all duration-300"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-base text-primary font-medium text-sm hover:bg-surface-2 transition-all duration-300"
                   disabled={processingId === roomToDelete.id}
                 >
                   Annuler
@@ -617,7 +634,7 @@ export const RoomList: React.FC<RoomListProps> = ({ onEdit, onDelete, refreshTri
                 {/* Bouton Supprimer */}
                 <button
                   onClick={handleConfirmDelete}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-danger hover:bg-danger/90 dark:bg-danger-dark dark:hover:bg-danger-dark/90 text-white font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-danger/40 bg-danger text-danger font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={processingId === roomToDelete.id}
                 >
                   {processingId === roomToDelete.id ? (
@@ -640,8 +657,8 @@ export const RoomList: React.FC<RoomListProps> = ({ onEdit, onDelete, refreshTri
 
       {/* Navigation Modal */}
       {isNavigationModalOpen && navigationRoom && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black backdrop-blur-sm animate-fade-in">
-          <div className="bg dark:bg-surface-2 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-base-light dark:border-base-dark animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-base bg-surface p-6 shadow-2xl animate-scale-in">
             <div className="text-center">
               <h3 className="text-xl font-bold text-primary mb-4">
                 Chambre {navigationRoom.numero}
