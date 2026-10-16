@@ -4,8 +4,10 @@ import { Reservation, Room, Client, ReservationExtraService, ReservationPayment 
 import { reservationService } from '../../../services/reservation.service';
 import api from '../../../lib/api';
 import { 
-  X, 
-  Calendar, 
+  X,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
   Users, 
   DollarSign, 
   User, 
@@ -63,6 +65,33 @@ const paymentMethodLabels: Record<string, string> = {
   ESPECES: 'Espèces', TPE: 'TPE', MVOLA: 'MVola', ORANGE_MONEY: 'Orange Money',
   CARTE: 'Carte bancaire', VIREMENT: 'Virement', CREDIT: 'Crédit', GRATUIT: 'Gratuit',
 };
+const dateKey = (value: string | Date) => {
+  if (value instanceof Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return value.slice(0, 10);
+};
+const dateFromKey = (value: string) => {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+const addDays = (value: string, days: number) => {
+  const date = dateFromKey(value);
+  date.setDate(date.getDate() + days);
+  return dateKey(date);
+};
+const getMonthDays = (month: Date) => {
+  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+  const offset = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  return [
+    ...Array.from({ length: offset }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, index) => dateKey(new Date(month.getFullYear(), month.getMonth(), index + 1))),
+  ];
+};
 
 interface ReservationFormModalProps {
   isOpen: boolean;
@@ -80,7 +109,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   // Récupération des données
   const { rooms, loading: roomsLoading, error: roomsError, loadRooms } = useRooms();
   const { clients, loading: clientsLoading, error: clientsError, loadClients } = useClients();
-  const { createReservation, updateReservation } = useReservations();
+  const { createReservation, updateReservation, reservations, loading: reservationsLoading } = useReservations();
   
   const [formData, setFormData] = useState<Partial<Reservation>>({
     client_id: undefined,
@@ -105,9 +134,31 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   const [discountPercent, setDiscountPercent] = useState(0);
   const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [showAllClients, setShowAllClients] = useState(false);
+  const [isArrivalCalendarOpen, setIsArrivalCalendarOpen] = useState(false);
+  const [arrivalCalendarMonth, setArrivalCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [roomAvailabilityError, setRoomAvailabilityError] = useState<string | null>(null);
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [exchangeRate, setExchangeRate] = useState<string>('');
+  const todayKey = dateKey(new Date());
+  const roomReservations = reservations.filter(res =>
+    res.room_id === formData.room_id &&
+    res.id !== initialData?.id &&
+    !['ANNULEE', 'NO_SHOW', 'TERMINEE'].includes(res.statut)
+  );
+  const minimumArrivalDate = todayKey;
+  const nextArrivalDate = (arrivalDate: string) => roomReservations
+    .map(reservation => dateKey(reservation.date_arrivee))
+    .filter(date => date > arrivalDate)
+    .sort()[0];
+  const isArrivalDateUnavailable = (arrivalDate: string) =>
+    (arrivalDate < minimumArrivalDate && arrivalDate !== initialData?.date_arrivee.slice(0, 10)) ||
+    roomReservations.some(reservation =>
+      dateKey(reservation.date_arrivee) <= arrivalDate && dateKey(reservation.date_depart) > arrivalDate
+    );
+  const maxDepartureDate = formData.date_arrivee ? nextArrivalDate(formData.date_arrivee) : undefined;
   // Transferts & excursions saisis manuellement (hors remise, ajoutés au total)
   const [extraServices, setExtraServices] = useState<ReservationExtraService[]>([]);
   const extrasTotal = extraServices.reduce((sum, item) => sum + (Number(item.prix) || 0), 0);
@@ -367,25 +418,42 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   };
 
   const handleDateChange = async (field: 'date_arrivee' | 'date_depart', value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    if (field === 'date_arrivee' || field === 'date_depart') {
-      const arrivee = field === 'date_arrivee' ? value : formData.date_arrivee;
-      const depart = field === 'date_depart' ? value : formData.date_depart;
-      calculateTotal(selectedRoom, arrivee, depart);
-      
-      // Check room availability when dates change
-      if (formData.room_id && arrivee && depart && !initialData) {
-        try {
-          const response = await api.get(`/api/hebergement/rooms/availability?room_id=${formData.room_id}&date_arrivee=${arrivee}&date_depart=${depart}`);
-          const data = response.data.data;
-          console.log('Date change availability check:', data);
-          if (!data.available) {
-            setShowAvailabilityModal(true);
-          }
-        } catch (error) {
-          console.error('Error checking room availability:', error);
+    const arrivee = field === 'date_arrivee' ? value : formData.date_arrivee;
+    let depart = field === 'date_depart' ? value : formData.date_depart;
+
+    if (field === 'date_arrivee' && value && isArrivalDateUnavailable(value)) {
+      setErrors(prev => ({ ...prev, date_arrivee: 'Cette date est passée ou déjà réservée pour cette chambre.' }));
+      return;
+    }
+
+    if (field === 'date_depart' && arrivee) {
+      const nextArrival = nextArrivalDate(arrivee);
+      if (value <= arrivee || (nextArrival && value > nextArrival)) {
+        setErrors(prev => ({ ...prev, date_depart: 'La date de départ doit précéder la prochaine réservation.' }));
+        return;
+      }
+    }
+
+    if (field === 'date_arrivee' && arrivee) {
+      const nextArrival = nextArrivalDate(arrivee);
+      if (!depart || depart <= arrivee || (nextArrival && depart > nextArrival)) {
+        depart = nextArrival || addDays(arrivee, 1);
+      }
+    }
+
+    setErrors(prev => ({ ...prev, [field]: '' }));
+    setFormData(prev => ({ ...prev, date_arrivee: arrivee, date_depart: depart }));
+    setIsArrivalCalendarOpen(false);
+    calculateTotal(selectedRoom, arrivee, depart);
+
+    if (formData.room_id && arrivee && depart && !initialData) {
+      try {
+        const response = await api.get(`/api/hebergement/rooms/availability?room_id=${formData.room_id}&date_arrivee=${arrivee}&date_depart=${depart}`);
+        if (!response.data.data.available) {
+          setShowAvailabilityModal(true);
         }
+      } catch (error) {
+        console.error('Error checking room availability:', error);
       }
     }
   };
@@ -589,6 +657,14 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   };
 
   const nights = getNightsCount();
+  const manualPrice = formData.manual_price ?? 0;
+  const normalizedClientSearch = clientSearchTerm.toLowerCase();
+  const filteredClients = clients.filter(client =>
+    !normalizedClientSearch ||
+    client.nom?.toLowerCase().includes(normalizedClientSearch) ||
+    client.prenom?.toLowerCase().includes(normalizedClientSearch) ||
+    client.telephone?.includes(clientSearchTerm)
+  );
 
   // Affichage du chargement
   if (roomsLoading || clientsLoading) {
@@ -609,7 +685,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
     <>
       {/* Modal principal */}
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <div className="p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="w-full p-4 sm:p-6">
           {/* Header */}
           <div className="relative mb-6">
             <div className="absolute -top-6 -right-6 w-32 h-32 bg-gradient-to-br from-accent/10 to-transparent rounded-full blur-2xl" />
@@ -762,27 +838,24 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                     style={{ minHeight: '42px' }}
                   />
                   {showAllClients && (
-                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg max-h-60 overflow-y-auto">
-                      {clients
-                        .filter(client => 
-                          clientSearchTerm === '' || 
-                          client.nom?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
-                          client.prenom?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
-                          client.telephone?.includes(clientSearchTerm)
-                        )
-                        .map(client => (
-                          <div
+                    <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-base bg-surface shadow-soft-lg">
+                      {filteredClients.map(client => (
+                          <button
                             key={client.id}
+                            type="button"
                             onClick={() => {
                               handleClientChange(client.id);
                               setClientSearchTerm(`${client.prenom} ${client.nom}`);
                               setShowAllClients(false);
                             }}
-                            className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-sm text-white"
+                            className="block w-full px-3 py-2 text-left text-sm text-primary transition-colors hover:bg-surface-2 focus:bg-surface-2 focus:outline-none"
                           >
                             {client.prenom} {client.nom} {client.telephone ? `- ${client.telephone}` : ''}
-                          </div>
+                          </button>
                         ))}
+                      {filteredClients.length === 0 && (
+                        <p className="px-3 py-2 text-sm text-muted">Aucun client trouvé</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -836,17 +909,79 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                   <Calendar size={14} className="inline mr-1.5" />
                   Date d'arrivée *
                 </label>
-                <input
-                  type="date"
-                  value={formData.date_arrivee || ''}
-                  onChange={(e) => handleDateChange('date_arrivee', e.target.value)}
-                  className={`input-field w-full text-sm py-2.5 px-3.5 rounded-lg ${
-                    errors.date_arrivee ? 'border-red-500 focus:border-red-500' : ''
-                  }`}
-                  required
-                  disabled={isSubmitting}
-                  style={{ minHeight: '42px' }}
-                />
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentDate = formData.date_arrivee ? dateFromKey(formData.date_arrivee) : dateFromKey(todayKey);
+                      setArrivalCalendarMonth(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1));
+                      setIsArrivalCalendarOpen(open => !open);
+                    }}
+                    className={`input-field flex min-h-[42px] w-full items-center justify-between rounded-lg px-3.5 py-2.5 text-left text-sm ${
+                      errors.date_arrivee ? 'border-red-500 focus:border-red-500' : ''
+                    }`}
+                    disabled={isSubmitting || !formData.room_id || reservationsLoading}
+                  >
+                    <span className={formData.date_arrivee ? 'text-primary' : 'text-muted'}>
+                      {formData.date_arrivee
+                        ? dateFromKey(formData.date_arrivee).toLocaleDateString('fr-FR')
+                        : 'Sélectionner une date'}
+                    </span>
+                    <Calendar size={16} className="text-muted" />
+                  </button>
+                  {isArrivalCalendarOpen && (
+                    <div className="absolute z-30 mt-1 w-full min-w-[280px] rounded-xl border border-base bg-surface p-3 shadow-soft-lg">
+                      <div className="mb-3 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => setArrivalCalendarMonth(month => new Date(month.getFullYear(), month.getMonth() - 1, 1))}
+                          disabled={dateKey(new Date(arrivalCalendarMonth.getFullYear(), arrivalCalendarMonth.getMonth(), 1)) <= dateKey(new Date(Number(minimumArrivalDate.slice(0, 4)), Number(minimumArrivalDate.slice(5, 7)) - 1, 1))}
+                          className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-primary disabled:opacity-40"
+                          aria-label="Mois précédent"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <span className="text-sm font-semibold capitalize text-primary">
+                          {arrivalCalendarMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setArrivalCalendarMonth(month => new Date(month.getFullYear(), month.getMonth() + 1, 1))}
+                          className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-primary"
+                          aria-label="Mois suivant"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                      <div className="mb-1 grid grid-cols-7 text-center text-xs text-muted">
+                        {['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'].map(day => <span key={day} className="py-1">{day}</span>)}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {getMonthDays(arrivalCalendarMonth).map((day, index) => {
+                          if (!day) return <span key={`empty-${index}`} />;
+                          const unavailable = isArrivalDateUnavailable(day);
+                          const selected = day === formData.date_arrivee;
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => void handleDateChange('date_arrivee', day)}
+                              disabled={unavailable || isSubmitting}
+                              className={`h-9 rounded-lg text-sm transition-colors ${
+                                selected ? 'bg-accent text-white' :
+                                unavailable ? 'cursor-not-allowed text-muted/40 line-through' :
+                                'text-primary hover:bg-surface-2'
+                              }`}
+                              aria-label={`${dateFromKey(day).toLocaleDateString('fr-FR')}${unavailable ? ', indisponible' : ''}`}
+                            >
+                              {Number(day.slice(8, 10))}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {errors.date_arrivee && (
                   <p className="text-red-400 text-xs flex items-center gap-1">
                     <AlertCircle size={11} /> {errors.date_arrivee}
@@ -866,7 +1001,8 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                     errors.date_depart ? 'border-red-500 focus:border-red-500' : ''
                   }`}
                   required
-                  min={formData.date_arrivee || undefined}
+                  min={formData.date_arrivee ? addDays(formData.date_arrivee, 1) : undefined}
+                  max={maxDepartureDate}
                   disabled={isSubmitting}
                   style={{ minHeight: '42px' }}
                 />
@@ -888,7 +1024,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                   </label>
                   <input
                     type="number"
-                    step="0.01"
+                    step="1"
                     value={formData.manual_price || ''}
                     onChange={(e) => {
                       const newPrice = parseFloat(e.target.value) || 0;
@@ -923,7 +1059,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                   </label>
                   <input
                     type="number"
-                    step="0.01"
+                    step="1"
                     value={exchangeRate}
                     onChange={(e) => {
                       setExchangeRate(e.target.value);
@@ -1231,12 +1367,12 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
               <div className="rounded-lg bg-surface-2 p-3 text-sm space-y-1">
                 <div className="flex justify-between"><span>Durée</span><strong>{nights} nuit{nights > 1 ? 's' : ''}</strong></div>
                 <div className="flex justify-between"><span>Type</span><strong>{formData.type_reservation === 'BOOKING' ? 'Booking.com' : 'Sur place'}</strong></div>
-                {formData.type_reservation === 'BOOKING' && formData.manual_price > 0 && (
+                {formData.type_reservation === 'BOOKING' && manualPrice > 0 && (
                   <>
-                    <div className="flex justify-between"><span>Prix/nuit Booking.com (€)</span><strong>{formData.manual_price.toFixed(2)} €</strong></div>
-                    <div className="flex justify-between"><span>Total Booking.com (€)</span><strong>{(formData.manual_price * nights).toFixed(2)} €</strong></div>
+                    <div className="flex justify-between"><span>Prix/nuit Booking.com (€)</span><strong>{manualPrice.toFixed(2)} €</strong></div>
+                    <div className="flex justify-between"><span>Total Booking.com (€)</span><strong>{(manualPrice * nights).toFixed(2)} €</strong></div>
                     <div className="flex justify-between"><span>Taux de change</span><strong>{exchangeRate} Ar/€</strong></div>
-                    <div className="flex justify-between"><span>Total converti (Ar)</span><strong>{formatCurrency(formData.manual_price * nights * parseFloat(exchangeRate))}</strong></div>
+                    <div className="flex justify-between"><span>Total converti (Ar)</span><strong>{formatCurrency(manualPrice * nights * parseFloat(exchangeRate))}</strong></div>
                   </>
                 )}
                 {formData.type_reservation !== 'BOOKING' && selectedRoom && nights > 0 && (
@@ -1462,4 +1598,4 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
       `}</style>
     </>
   );
-};  
+};

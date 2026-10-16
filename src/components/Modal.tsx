@@ -51,10 +51,10 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4">
       <div
         ref={modalRef}
-        className={`bg-background rounded-2xl shadow-soft-lg ${sizeClasses[size]} w-full max-h-[90vh] overflow-y-auto animate-scale-in`}
+        className={`w-full ${sizeClasses[size]} max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl border border-base bg-surface shadow-soft-lg animate-scale-in sm:max-h-[calc(100dvh-2rem)]`}
       >
         {children}
       </div>
