@@ -109,7 +109,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   // Récupération des données
   const { rooms, loading: roomsLoading, error: roomsError, loadRooms } = useRooms();
   const { clients, loading: clientsLoading, error: clientsError, loadClients } = useClients();
-  const { createReservation, updateReservation, reservations, loading: reservationsLoading } = useReservations();
+  const { createReservation, updateReservation, reservations, loading: reservationsLoading, loadReservations } = useReservations();
   
   const [formData, setFormData] = useState<Partial<Reservation>>({
     client_id: undefined,
@@ -146,7 +146,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   const roomReservations = reservations.filter(res =>
     res.room_id === formData.room_id &&
     res.id !== initialData?.id &&
-    !['ANNULEE', 'NO_SHOW', 'TERMINEE'].includes(res.statut)
+    !['ANNULEE', 'NO_SHOW', 'TERMINEE'].includes(String(res.statut || '').toUpperCase())
   );
   const minimumArrivalDate = todayKey;
   const nextArrivalDate = (arrivalDate: string) => roomReservations
@@ -281,8 +281,9 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
     if (isOpen) {
       loadRooms();
       loadClients();
+      void loadReservations();
     }
-  }, [isOpen, loadRooms, loadClients]);
+  }, [isOpen, loadRooms, loadClients, loadReservations]);
 
   // Initialiser le formulaire avec les données de la réservation
   useEffect(() => {

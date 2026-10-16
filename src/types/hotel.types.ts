@@ -23,6 +23,7 @@ export interface Room {
   statut: 'LIBRE' | 'OCCUPEE' | 'RESERVEE' | 'NETTOYAGE' | 'MAINTENANCE' | 'HORS_SERVICE';
   etage: number;
   room_type?: RoomType;
+  has_reservations?: boolean | number;
   created_at?: string;
   updated_at?: string;
 }

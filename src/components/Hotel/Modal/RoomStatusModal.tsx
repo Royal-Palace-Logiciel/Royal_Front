@@ -44,32 +44,38 @@ export const RoomStatusModal: React.FC<RoomStatusModalProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {statusOptions.map((status) => {
-            const Icon = status.icon;
-            return (
-              <button
-                key={status.value}
-                onClick={() => {
-                  onStatusChange(status.value as Room['statut']);
-                }}
-                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2
-                  ${room.statut === status.value 
-                    ? `border-${status.color} bg-${status.color}/10` 
-                    : 'border-base hover:border-accent/30'
-                  }`}
-              >
-                <Icon size={24} className={`text-${status.color}`} />
-                <span className="text-sm font-medium text-primary">
-                  {status.label}
-                </span>
-                {room.statut === status.value && (
-                  <span className="text-xs text-accent">✓ Actif</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {room.has_reservations ? (
+          <p className="text-sm text-muted">
+            Le statut ne peut pas être modifié car cette chambre est liée à une réservation.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {statusOptions.map((status) => {
+              const Icon = status.icon;
+              return (
+                <button
+                  key={status.value}
+                  onClick={() => {
+                    onStatusChange(status.value as Room['statut']);
+                  }}
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2
+                    ${room.statut === status.value
+                      ? `border-${status.color} bg-${status.color}/10`
+                      : 'border-base hover:border-accent/30'
+                    }`}
+                >
+                  <Icon size={24} className={`text-${status.color}`} />
+                  <span className="text-sm font-medium text-primary">
+                    {status.label}
+                  </span>
+                  {room.statut === status.value && (
+                    <span className="text-xs text-accent">✓ Actif</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex gap-3 pt-6">
           <button

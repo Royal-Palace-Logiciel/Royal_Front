@@ -419,34 +419,40 @@ export const RoomFormModal: React.FC<RoomFormModalProps> = ({
                 <Home size={14} className="inline mr-1.5" />
                 Statut
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                {statusOptions.map((status) => {
-                  const Icon = status.icon;
-                  const isSelected = formData.statut === status.value;
-                  return (
-                    <button
-                      key={status.value}
-                      type="button"
-                      onClick={() => setFormData({ 
-                        ...formData, 
-                        statut: status.value as Room['statut']
-                      })}
-                      className={`p-2.5 rounded-lg border-2 transition-all text-center ${
-                        isSelected
-                          ? `border-${status.color} bg-${status.color}/10`
-                          : 'border-base hover:border-accent/30'
-                      } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      style={{ minHeight: '48px' }}
-                      disabled={isSubmitting}
-                    >
-                      <Icon size={15} className={`mx-auto mb-0.5 text-${status.color}`} />
-                      <span className={`text-[11px] font-medium ${isSelected ? `text-${status.color}` : 'text-muted'}`}>
-                        {status.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              {initialData?.has_reservations ? (
+                <p className="text-sm text-muted">
+                  Le statut ne peut pas être modifié car cette chambre est liée à une réservation.
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {statusOptions.map((status) => {
+                    const Icon = status.icon;
+                    const isSelected = formData.statut === status.value;
+                    return (
+                      <button
+                        key={status.value}
+                        type="button"
+                        onClick={() => setFormData({
+                          ...formData,
+                          statut: status.value as Room['statut']
+                        })}
+                        className={`p-2.5 rounded-lg border-2 transition-all text-center ${
+                          isSelected
+                            ? `border-${status.color} bg-${status.color}/10`
+                            : 'border-base hover:border-accent/30'
+                        } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        style={{ minHeight: '48px' }}
+                        disabled={isSubmitting}
+                      >
+                        <Icon size={15} className={`mx-auto mb-0.5 text-${status.color}`} />
+                        <span className={`text-[11px] font-medium ${isSelected ? `text-${status.color}` : 'text-muted'}`}>
+                          {status.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Boutons */}

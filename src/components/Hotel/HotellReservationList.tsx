@@ -427,7 +427,6 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
           className="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-accent"
         >
           <option value="TOUS">Tous</option>
-          <option value="CHECKED_IN">Check-in</option>
           <option value="ARRIVAL">Arrivée</option>
           <option value="DEPARTURE">Départ</option>
         </select>
