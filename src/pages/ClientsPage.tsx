@@ -96,6 +96,7 @@ const ClientsPage: React.FC = () => {
 
   // Formulaire
   const initialFormData: ClientFormData = {
+    type_client: 'INDIVIDUEL',
     nom: '',
     prenom: '',
     email: '',
@@ -165,8 +166,18 @@ const ClientsPage: React.FC = () => {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     
-    if (!formData.nom?.trim()) {
+    const typeClient = formData.type_client || 'INDIVIDUEL';
+    if (typeClient === 'INDIVIDUEL' && !formData.nom?.trim()) {
       errors.nom = 'Le nom est requis';
+    }
+    if (typeClient !== 'INDIVIDUEL' && !formData.nom_societe?.trim()) {
+      errors.nom_societe = 'Le nom de société est requis';
+    }
+    for (const field of ['adresse', 'telephone', 'email'] as const) {
+      if (!formData[field]?.trim()) errors[field] = `${field} est requis`;
+    }
+    if (typeClient === 'TOUR_OPERATEUR' && !formData.reference_client?.trim()) {
+      errors.reference_client = 'La référence client est requise';
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Email invalide';

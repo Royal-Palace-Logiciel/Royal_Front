@@ -30,6 +30,7 @@ export interface Room {
 export interface Client {
   id: number;
   code_client: string | null;
+  type_client?: 'INDIVIDUEL' | 'SOCIETE' | 'TOUR_OPERATEUR';
   nom: string;
   prenom: string | null;
   telephone: string | null;
@@ -88,11 +89,14 @@ export interface Reservation {
   montant_total: number | null;
   montant_brut?: number | null;
   remise_pourcentage?: number;
+  tarif_category?: 'SOCIETE' | 'TOUR_OPERATEUR' | 'PUBLIC';
   montant_remise?: number | null;
   remise_validee_par?: number | null;
   remise_validee_at?: string | null;
   statut: 'EN_ATTENTE' | 'CONFIRMEE' | 'CHECKED_IN' | 'EN_COURS' | 'ANNULEE' | 'TERMINEE' | 'NO_SHOW';
   type_reservation?: 'BOOKING' | 'ON_SITE' | 'GRATUIT';
+  origine_reservation?: 'TELEPHONE' | 'DESK' | 'MAIL';
+  facture_statut?: 'PROFORMA' | 'FINALE' | 'CREDIT';
   laundry_included?: boolean;
   laundry_price?: number;
   manual_price?: number;
@@ -118,6 +122,14 @@ export interface Reservation {
   modified_by_prenom?: string;
   created_at?: string;
   updated_at?: string;
+  occupants?: Array<{
+    id: number;
+    room_id: number;
+    nom: string;
+    prenom: string | null;
+    telephone?: string | null;
+    email?: string | null;
+  }>;
 }
 
 export interface Stay {

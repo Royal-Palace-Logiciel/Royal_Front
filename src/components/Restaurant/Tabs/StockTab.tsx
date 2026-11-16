@@ -404,7 +404,9 @@ const StockPanel: React.FC = () => {
       key: 'product_nom', label: 'Produit', render: (item: any) => (
         <div>
           <p className="text-white font-medium">{item.product_nom}</p>
-          <p className="text-slate-500 text-xs">{item.type_produit} • {item.location_nom}</p>
+      <p className="text-slate-500 text-xs">
+        {item.type_produit === 'PRODUIT_FINI' ? 'Plat / menu' : 'Ingrédient'} • {item.location_nom}
+      </p>
           {item.category_nom && <p className="text-slate-600 text-xs">Catégorie: {item.category_nom}</p>}
           {item.subcategory_nom && <p className="text-slate-600 text-xs">Sous-catégorie: {item.subcategory_nom}</p>}
         </div>
@@ -442,12 +444,12 @@ const StockPanel: React.FC = () => {
     {
       key: 'actions', label: '', render: (item: any) => (
         <div className="flex gap-2">
-        <button onClick={() => openEdit(item)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all" title="Modifier l'article">
+        {item.type_produit !== 'PRODUIT_FINI' && <button onClick={() => openEdit(item)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all" title="Modifier l'article">
           <Edit2 size={14} />
-        </button>
-        <button onClick={() => { setDeleteTarget(item); setShowDeleteModal(true); }} className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-400 transition-all" title="Supprimer l'article">
+        </button>}
+        {item.type_produit !== 'PRODUIT_FINI' && <button onClick={() => { setDeleteTarget(item); setShowDeleteModal(true); }} className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-400 transition-all" title="Supprimer l'article">
           <Trash2 size={14} />
-        </button>
+        </button>}
         </div>
       )
     },

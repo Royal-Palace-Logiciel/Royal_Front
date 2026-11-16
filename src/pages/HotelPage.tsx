@@ -35,6 +35,7 @@ import { useHDA } from '../context/HDAContext';
 import { formatCurrency, formatDate } from '../utils/data';
 import { RoomList } from '../components/Hotel/HotelRoomList';
 import { ReservationList } from '../components/Hotel/HotellReservationList';
+import { ReservationPlanning } from '../components/Hotel/ReservationPlanning';
 import { EquipmentManager } from '../components/Hotel/HotelEquipmentManager';
 import { MaintenanceManager } from '../components/Hotel/HotelMaintenanceManager';
 import { HousekeepingManager } from '../components/Hotel/HotelHousekeepingManager';
@@ -181,6 +182,7 @@ const HotelPage: React.FC = () => {
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [reservationPrefill, setReservationPrefill] = useState<Partial<Reservation> | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -460,9 +462,23 @@ const HotelPage: React.FC = () => {
         )}
         {activeTab === 'reservations' && (
           <div className="overflow-x-auto">
+            <ReservationPlanning
+              refreshTrigger={dataRefreshKey}
+              onCreate={(prefill) => {
+                setSelectedReservation(null);
+                setReservationPrefill(prefill);
+                setIsReservationModalOpen(true);
+              }}
+              onDetails={(res) => {
+                setReservationPrefill(undefined);
+                setSelectedReservation(res);
+                setIsReservationModalOpen(true);
+              }}
+            />
             <ReservationList
               view="active"
               onEdit={(res) => {
+                setReservationPrefill(undefined);
                 setSelectedReservation(res);
                 setIsReservationModalOpen(true);
               }}
@@ -471,6 +487,47 @@ const HotelPage: React.FC = () => {
               refreshTrigger={dataRefreshKey}
               paymentCancelledTrigger={paymentCancelledTrigger}
             />
+            {safeReservations.filter((reservation) =>
+              reservation.statut === 'TERMINEE' && Number(reservation.montant_credit || 0) > 0
+            ).length > 0 && (
+              <div className="mt-5 rounded-2xl border border-orange-400/30 bg-orange-500/10 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-orange-200">Clients à crédit</h3>
+                    <p className="text-sm text-orange-100/70">Séjours terminés avec un solde restant dû.</p>
+                  </div>
+                  <span className="rounded-full bg-orange-400/20 px-3 py-1 text-sm font-semibold text-orange-200">
+                    {safeReservations.filter((reservation) =>
+                      reservation.statut === 'TERMINEE' && Number(reservation.montant_credit || 0) > 0
+                    ).length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {safeReservations.filter((reservation) =>
+                    reservation.statut === 'TERMINEE' && Number(reservation.montant_credit || 0) > 0
+                  ).map((reservation) => (
+                    <div key={reservation.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-300/20 bg-surface px-3 py-2">
+                      <div>
+                        <p className="font-medium text-primary">
+                          {reservation.client_prenom || 'Client'} {reservation.client_nom || ''}
+                        </p>
+                        <p className="text-xs text-muted">Chambre {reservation.room_numero || reservation.room_id}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-orange-300">{formatCurrency(reservation.montant_credit)}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleEncaisser(reservation)}
+                          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-black hover:bg-accent/90"
+                        >
+                          Encaisser
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
         {activeTab === 'historiqueReservations' && (
@@ -575,12 +632,15 @@ const HotelPage: React.FC = () => {
         onClose={() => {
           setIsReservationModalOpen(false);
           setSelectedReservation(null);
+          setReservationPrefill(undefined);
         }}
         initialData={selectedReservation}
+        prefill={reservationPrefill}
         onSuccess={() => {
           setDataRefreshKey((prev) => prev + 1);
           setIsReservationModalOpen(false);
           setSelectedReservation(null);
+          setReservationPrefill(undefined);
         }}
       />
 
