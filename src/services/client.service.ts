@@ -4,6 +4,7 @@ import api from '../lib/api';
 export interface Client {
   id: number;
   code_client: string | null;
+  type_client?: 'INDIVIDUEL' | 'SOCIETE' | 'TOUR_OPERATEUR';
   nom: string;
   prenom: string | null;
   telephone: string | null;
@@ -20,6 +21,7 @@ export interface Client {
 
 export interface ClientFormData {
   code_client?: string;
+  type_client?: 'INDIVIDUEL' | 'SOCIETE' | 'TOUR_OPERATEUR';
   nom: string;
   prenom?: string;
   telephone?: string;
@@ -30,6 +32,12 @@ export interface ClientFormData {
   numero_piece?: string;
   photo_url?: string | null;
   statut?: 'ACTIF' | 'INACTIF' | 'BLOCKED';
+  nom_societe?: string;
+  nif?: string;
+  stat?: string;
+  rcs?: string;
+  cif?: string;
+  reference_client?: string;
 }
 
 export interface ClientWithDetails extends Client {

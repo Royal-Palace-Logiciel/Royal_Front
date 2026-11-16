@@ -68,6 +68,27 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [enrichedReservations, setEnrichedReservations] = useState<Reservation[]>([]);
   const [barSpendByReservation, setBarSpendByReservation] = useState<Record<number, number>>({});
+
+  const handlePrintInvoice = async (reservation: Reservation) => {
+    try {
+      const invoices = await reservationService.getHotelInvoices(reservation.id);
+      const invoice = Array.isArray(invoices)
+        ? invoices.find((item: any) => item.invoice_type === (reservation.statut === 'TERMINEE' ? 'FINALE' : 'PROFORMA')) || invoices[0]
+        : invoices;
+      if (!invoice) throw new Error('Facture introuvable');
+      const popup = window.open('', '_blank', 'noopener,noreferrer');
+      if (!popup) throw new Error('La fenêtre d’impression a été bloquée');
+      const rows = (invoice.items || []).map((item: any) =>
+        `<tr><td>${String(item.description || '').replace(/[<>&]/g, '')}</td><td>${Number(item.montant || 0).toLocaleString('fr-FR')} Ar</td></tr>`
+      ).join('');
+      popup.document.write(`<html><head><title>${invoice.numero}</title><style>body{font-family:Arial;padding:24px}table{width:100%;border-collapse:collapse}td{padding:8px;border-bottom:1px solid #ddd}.total{font-weight:bold;font-size:18px}</style></head><body><h1>${invoice.invoice_type === 'FINALE' ? 'Facture finale' : 'Facture proforma'}</h1><p>N° ${invoice.numero}</p><table>${rows}</table><p class="total">Total : ${Number(invoice.montant_total || 0).toLocaleString('fr-FR')} Ar</p><p>Statut : ${invoice.statut}</p></body></html>`);
+      popup.document.close();
+      popup.focus();
+      popup.print();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Impossible d’imprimer la facture');
+    }
+  };
   const [spaSpendByReservation, setSpaSpendByReservation] = useState<Record<number, number>>({});
   const [historyFromDate, setHistoryFromDate] = useState('');
   const [historyToDate, setHistoryToDate] = useState('');
@@ -637,6 +658,14 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
                       title="Imprimer le ticket (80 mm)"
                     >
                       <Printer size={14} className="text-gray-400" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handlePrintInvoice(res)}
+                      className="px-2 py-1 text-xs rounded border border-base text-gray-300 hover:bg-gray-800"
+                      title="Imprimer la facture proforma ou finale"
+                    >
+                      Facture
                     </button>
                     <button
                       type="button"

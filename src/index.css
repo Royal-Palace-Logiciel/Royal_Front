@@ -444,6 +444,21 @@ select {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+input.text-white,
+textarea.text-white,
+select.text-white,
+input[class*="text-white"],
+textarea[class*="text-white"],
+select[class*="text-white"] {
+  color: var(--color-primary) !important;
+}
+
+input,
+textarea,
+select {
+  color-scheme: light;
+}
+
 input:focus,
 textarea:focus,
 select:focus {

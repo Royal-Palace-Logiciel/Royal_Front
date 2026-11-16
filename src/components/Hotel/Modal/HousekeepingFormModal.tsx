@@ -130,7 +130,7 @@ export const HousekeepingFormModal: React.FC<HousekeepingFormModalProps> = ({
             <select
               value={formData.room_id}
               onChange={(e) => setFormData({ ...formData, room_id: Number(e.target.value) })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary focus:outline-none focus:border-accent"
               disabled={isSubmitting}
             >
               <option value={0}>Sélectionner une chambre</option>
@@ -153,7 +153,7 @@ export const HousekeepingFormModal: React.FC<HousekeepingFormModalProps> = ({
             <select
               value={formData.type_tache}
               onChange={(e) => setFormData({ ...formData, type_tache: e.target.value as any })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary focus:outline-none focus:border-accent"
               disabled={isSubmitting}
             >
               {Object.entries(TYPE_TACHE_LABELS).map(([value, label]) => (
@@ -171,7 +171,7 @@ export const HousekeepingFormModal: React.FC<HousekeepingFormModalProps> = ({
               <textarea
                 value={formData.exceptional_details}
                 onChange={(e) => setFormData({ ...formData, exceptional_details: e.target.value })}
-                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
+                className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
                 rows={2}
                 placeholder="Spécifiez les détails du nettoyage exceptionnel..."
                 disabled={isSubmitting}
@@ -197,7 +197,7 @@ export const HousekeepingFormModal: React.FC<HousekeepingFormModalProps> = ({
             <select
               value={formData.statut}
               onChange={(e) => setFormData({ ...formData, statut: e.target.value as any })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary focus:outline-none focus:border-accent"
               disabled={isSubmitting}
             >
               <option value="A_FAIRE">📋 À faire</option>
@@ -215,7 +215,7 @@ export const HousekeepingFormModal: React.FC<HousekeepingFormModalProps> = ({
               type="date"
               value={formData.planned_at}
               onChange={(e) => setFormData({ ...formData, planned_at: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary focus:outline-none focus:border-accent"
               disabled={isSubmitting}
             />
           </div>
@@ -226,7 +226,7 @@ export const HousekeepingFormModal: React.FC<HousekeepingFormModalProps> = ({
             <textarea
               value={formData.commentaire}
               onChange={(e) => setFormData({ ...formData, commentaire: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
               rows={3}
               placeholder="Informations supplémentaires..."
               disabled={isSubmitting}

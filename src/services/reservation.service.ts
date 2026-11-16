@@ -2,6 +2,7 @@ import api from '../lib/api';
 import { Reservation, ReservationPayment } from '../types/hotel.types';
 
 export type HotelPaymentMethod = 'ESPECES' | 'TPE' | 'MVOLA' | 'ORANGE_MONEY' | 'CARTE' | 'VIREMENT' | 'CREDIT' | 'GRATUIT';
+export type ReservationOrigin = 'TELEPHONE' | 'DESK' | 'MAIL';
 
 export interface ReservationPaymentInput {
   montant: number;
@@ -16,8 +17,17 @@ export interface ReservationFormData {
   date_depart: string;
   pdj_inclus?: boolean;
   moyen_paiement?: HotelPaymentMethod;
+  origine_reservation?: ReservationOrigin;
   montant_total: number;
   remise_pourcentage?: number;
+  tarif_category?: 'SOCIETE' | 'TOUR_OPERATEUR' | 'PUBLIC';
+  occupants?: Array<{
+    nom: string;
+    prenom?: string;
+    room_id: number;
+    telephone?: string;
+    email?: string;
+  }>;
   statut?: 'CONFIRMEE' | 'EN_COURS' | 'TERMINEE' | 'ANNULEE';
 }
 
@@ -171,6 +181,13 @@ export const reservationService = {
       console.error(`❌ Erreur checkIn ${reservationId}:`, error);
       throw error;
     }
+  },
+
+  getHotelInvoices: async (reservationId: number, type?: 'PROFORMA' | 'FINALE') => {
+    const response = await api.get<ApiResponse<any>>(
+      `${BASE_URL}/${reservationId}/invoices${type ? `?type=${type}` : ''}`
+    );
+    return response.data.data;
   },
 
   checkOut: async (stayId: number): Promise<Stay> => {

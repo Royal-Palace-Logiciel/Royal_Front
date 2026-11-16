@@ -155,7 +155,7 @@ export const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             <select
               value={formData.room_id}
               onChange={(e) => setFormData({ ...formData, room_id: Number(e.target.value) })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary focus:outline-none focus:border-accent"
               disabled={isSubmitting}
             >
               <option value={0}>Sélectionner une chambre</option>
@@ -169,10 +169,10 @@ export const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">Endroit exact *</label>
-            <input value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Ex. Toilettes femmes, 1er étage" className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+            <input value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Ex. Toilettes femmes, 1er étage" className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary" />
             {errors.location && <p className="text-red-400 text-xs mt-1">{errors.location}</p>}
             <label className="block text-sm font-medium text-gray-300 mb-1.5 mt-3">Équipement concerné</label>
-            <input value={formData.equipment_label} onChange={(e) => setFormData({ ...formData, equipment_label: e.target.value })} placeholder="Ex. Robinet, climatiseur..." className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+            <input value={formData.equipment_label} onChange={(e) => setFormData({ ...formData, equipment_label: e.target.value })} placeholder="Ex. Robinet, climatiseur..." className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary" />
           </div>
 
           {/* Équipement */}
@@ -181,7 +181,7 @@ export const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             <select
               value={formData.equipment_id || ''}
               onChange={(e) => setFormData({ ...formData, equipment_id: e.target.value ? Number(e.target.value) : null })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary focus:outline-none focus:border-accent"
               disabled={isSubmitting}
             >
               <option value="">Aucun équipement</option>
@@ -201,7 +201,7 @@ export const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             <select
               value={formData.type_intervention}
               onChange={(e) => setFormData({ ...formData, type_intervention: e.target.value as any })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary focus:outline-none focus:border-accent"
               disabled={isSubmitting}
             >
               <option value="PLOMBERIE">Plomberie</option>
@@ -221,7 +221,7 @@ export const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
               <textarea
                 value={formData.other_intervention_description}
                 onChange={(e) => setFormData({ ...formData, other_intervention_description: e.target.value })}
-                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
+                className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
                 rows={2}
                 placeholder="Spécifiez le type d'intervention..."
                 disabled={isSubmitting}
@@ -232,15 +232,15 @@ export const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">Ouvrier responsable</label>
-            <select value={formData.worker_id || ''} onChange={(e) => setFormData({ ...formData, worker_id: e.target.value ? Number(e.target.value) : null })} className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white">
+            <select value={formData.worker_id || ''} onChange={(e) => setFormData({ ...formData, worker_id: e.target.value ? Number(e.target.value) : null })} className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary">
               <option value="">{workers.length ? 'Sélectionner un ouvrier' : 'Aucun ouvrier enregistré'}</option>
               {workers.filter(worker => worker.statut === 'ACTIF').map(worker => <option key={worker.id} value={worker.id}>{worker.prenom} {worker.nom}</option>)}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-sm text-gray-300 mb-1.5">Date d’exécution</label><input type="date" value={formData.execution_date} onChange={(e) => setFormData({ ...formData, execution_date: e.target.value })} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" /></div>
-            <div><label className="block text-sm text-gray-300 mb-1.5">Date de finition</label><input type="date" value={formData.finish_date} onChange={(e) => setFormData({ ...formData, finish_date: e.target.value })} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" /></div>
+            <div><label className="block text-sm text-gray-300 mb-1.5">Date d’exécution</label><input type="date" value={formData.execution_date} onChange={(e) => setFormData({ ...formData, execution_date: e.target.value })} className="w-full px-3 py-2 bg-surface-2 border border-base rounded-lg text-primary" /></div>
+            <div><label className="block text-sm text-gray-300 mb-1.5">Date de finition</label><input type="date" value={formData.finish_date} onChange={(e) => setFormData({ ...formData, finish_date: e.target.value })} className="w-full px-3 py-2 bg-surface-2 border border-base rounded-lg text-primary" /></div>
           </div>
 
           {/* Statut */}
@@ -249,7 +249,7 @@ export const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             <select
               value={formData.statut}
               onChange={(e) => setFormData({ ...formData, statut: e.target.value as any })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary focus:outline-none focus:border-accent"
               disabled={isSubmitting}
             >
               <option value="OUVERT">🔴 Ouvert</option>
@@ -265,7 +265,7 @@ export const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
               rows={3}
               placeholder="Décrivez l'intervention..."
               disabled={isSubmitting}
@@ -287,9 +287,9 @@ export const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
           {/* Coûts */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">Coût des matériaux</label>
-            <input type="number" value={formData.materials_cost} onChange={(e) => setFormData({ ...formData, materials_cost: Number(e.target.value) })} className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white" min="0" />
+            <input type="number" value={formData.materials_cost} onChange={(e) => setFormData({ ...formData, materials_cost: Number(e.target.value) })} className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary" min="0" />
             <label className="block text-sm font-medium text-gray-300 mb-1.5 mt-3">Main d’œuvre</label>
-            <input type="number" value={formData.labor_cost} onChange={(e) => setFormData({ ...formData, labor_cost: Number(e.target.value) })} className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white" min="0" />
+            <input type="number" value={formData.labor_cost} onChange={(e) => setFormData({ ...formData, labor_cost: Number(e.target.value) })} className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary" min="0" />
             <p className="text-accent font-semibold mt-2">Total estimé : {(Number(formData.materials_cost) + Number(formData.labor_cost)).toLocaleString('fr-FR')} Ar</p>
           </div>
 

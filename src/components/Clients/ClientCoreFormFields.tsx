@@ -26,9 +26,45 @@ export const ClientCoreFormFields: React.FC<ClientCoreFormFieldsProps> = ({
   onSignatureChange,
 }) => (
   <>
+    <div>
+      <label className="block text-sm font-medium text-primary mb-1">Type de client *</label>
+      <select
+        name="type_client"
+        value={formData.type_client || 'INDIVIDUEL'}
+        onChange={onChange}
+        className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent/50 transition"
+        disabled={isSubmitting}
+      >
+        <option value="INDIVIDUEL">Individuel</option>
+        <option value="SOCIETE">Société</option>
+        <option value="TOUR_OPERATEUR">Tour opérateur (T.O.)</option>
+      </select>
+    </div>
+    {formData.type_client !== 'INDIVIDUEL' && (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-surface-2 border border-base">
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-primary mb-1">Nom de société *</label>
+          <input type="text" name="nom_societe" value={formData.nom_societe || ''} onChange={onChange} className="w-full px-4 py-2.5 bg-surface border border-base rounded-xl text-primary" disabled={isSubmitting} />
+          {formErrors.nom_societe && <p className="text-danger text-xs mt-1">{formErrors.nom_societe}</p>}
+        </div>
+        {(['nif', 'stat', 'rcs', 'cif'] as const).map((field) => (
+          <div key={field}>
+            <label className="block text-sm font-medium text-primary mb-1">{field.toUpperCase()} (facultatif)</label>
+            <input type="text" name={field} value={formData[field] || ''} onChange={onChange} className="w-full px-4 py-2.5 bg-surface border border-base rounded-xl text-primary" disabled={isSubmitting} />
+          </div>
+        ))}
+        {formData.type_client === 'TOUR_OPERATEUR' && (
+          <div>
+            <label className="block text-sm font-medium text-primary mb-1">Référence client *</label>
+            <input type="text" name="reference_client" value={formData.reference_client || ''} onChange={onChange} className="w-full px-4 py-2.5 bg-surface border border-base rounded-xl text-primary" disabled={isSubmitting} />
+            {formErrors.reference_client && <p className="text-danger text-xs mt-1">{formErrors.reference_client}</p>}
+          </div>
+        )}
+      </div>
+    )}
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label className="block text-sm font-medium text-primary mb-1">Nom *</label>
+        <label className="block text-sm font-medium text-primary mb-1">{formData.type_client === 'INDIVIDUEL' || !formData.type_client ? 'Nom *' : 'Contact (prénom)'}</label>
         <input
           type="text"
           name="nom"
@@ -51,7 +87,7 @@ export const ClientCoreFormFields: React.FC<ClientCoreFormFieldsProps> = ({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-primary mb-1">Email</label>
+        <label className="block text-sm font-medium text-primary mb-1">{formData.type_client === 'INDIVIDUEL' || !formData.type_client ? 'Email *' : 'Email *'}</label>
         <input
           type="email"
           name="email"
@@ -63,7 +99,7 @@ export const ClientCoreFormFields: React.FC<ClientCoreFormFieldsProps> = ({
         {formErrors.email && <p className="text-danger text-xs mt-1">{formErrors.email}</p>}
       </div>
       <div>
-        <label className="block text-sm font-medium text-primary mb-1">Téléphone</label>
+        <label className="block text-sm font-medium text-primary mb-1">Téléphone *</label>
         <input
           type="tel"
           name="telephone"
@@ -75,7 +111,7 @@ export const ClientCoreFormFields: React.FC<ClientCoreFormFieldsProps> = ({
         {formErrors.telephone && <p className="text-danger text-xs mt-1">{formErrors.telephone}</p>}
       </div>
       <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-primary mb-1">Adresse</label>
+        <label className="block text-sm font-medium text-primary mb-1">Adresse *</label>
         <input
           type="text"
           name="adresse"

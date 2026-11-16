@@ -65,7 +65,9 @@ export const roomTypeService = {
 export const roomService = {
   getRooms: async (): Promise<Room[]> => {
     try {
-      const response = await api.get<ApiResponse<Room[]>>('/api/hebergement/rooms');
+      const response = await api.get<ApiResponse<Room[]>>('/api/hebergement/rooms', {
+        params: { limit: 100 }
+      });
       return response.data.data;
     } catch (error) {
       console.error('❌ Erreur getRooms:', error);

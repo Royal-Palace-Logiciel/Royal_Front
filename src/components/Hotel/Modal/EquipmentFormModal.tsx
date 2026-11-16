@@ -134,7 +134,7 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
               type="text"
               value={formData.nom}
               onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent"
               placeholder="Nom de l'équipement"
               disabled={isSubmitting}
             />
@@ -149,7 +149,7 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
               type="text"
               value={formData.code}
               onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent font-mono"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent font-mono"
               placeholder="Code unique (ex: EQ-001)"
               disabled={isSubmitting}
             />
@@ -161,7 +161,7 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
               <select
                 value={formData.categorie}
                 onChange={(e) => setFormData({ ...formData, categorie: e.target.value })}
-                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent"
+                className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent"
                 disabled={isSubmitting}
               >
                 <option value="">Sélectionner une catégorie</option>
@@ -177,7 +177,7 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
                   onChange={(e) => {
                     setCategorySearchTerm(e.target.value);
                   }}
-                  className="w-full mt-2 px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent"
+                  className="w-full mt-2 px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent"
                   placeholder="Nom de la nouvelle catégorie"
                   disabled={isSubmitting}
                 />
@@ -191,7 +191,7 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
               type="number"
               value={formData.quantite}
               onChange={(e) => setFormData({ ...formData, quantite: Number(e.target.value) || 1 })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent"
               min="1"
               disabled={isSubmitting}
             />
@@ -230,7 +230,7 @@ export const EquipmentFormModal: React.FC<EquipmentFormModalProps> = ({
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
+              className="w-full px-4 py-2.5 bg-surface-2 border border-base rounded-lg text-primary placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
               rows={3}
               placeholder="Description de l'équipement..."
               disabled={isSubmitting}

@@ -36,6 +36,14 @@ import { signatureService } from '../../../services/signature.service';
 import { toast } from 'react-hot-toast';
 import { ClientCoreFormFields } from '../../Clients/ClientCoreFormFields';
 
+interface OccupantForm {
+  nom: string;
+  prenom: string;
+  room_id: number | '';
+  telephone: string;
+  email: string;
+}
+
 const parseExtraServices = (raw: Reservation['services_extras']): ReservationExtraService[] => {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw;
@@ -97,6 +105,7 @@ interface ReservationFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialData: Reservation | null;
+  prefill?: Partial<Reservation>;
   onSuccess?: () => void;
 }
 
@@ -104,6 +113,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   isOpen,
   onClose,
   initialData,
+  prefill,
   onSuccess,
 }) => {
   // Récupération des données
@@ -120,6 +130,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
     montant_total: 0,
     statut: 'CONFIRMEE',
     type_reservation: 'BOOKING',
+    origine_reservation: 'DESK',
     laundry_included: false,
     laundry_price: 0,
     manual_price: 0,
@@ -127,6 +138,8 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
 
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [tarifCategory, setTarifCategory] = useState<'SOCIETE' | 'TOUR_OPERATEUR' | 'PUBLIC'>('PUBLIC');
+  const [occupants, setOccupants] = useState<OccupantForm[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string | null>(null);
@@ -260,6 +273,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   // au lieu d'un formulaire réduit dupliqué.
   const [showClientModal, setShowClientModal] = useState(false);
   const emptyQuickClientData: ClientFormData = {
+    type_client: 'INDIVIDUEL',
     nom: '',
     prenom: '',
     telephone: '',
@@ -301,6 +315,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
         montant_total: Math.max(0, Number(initialData.montant_total || 0) - initialExtrasTotal),
         statut: initialData.statut || 'CONFIRMEE',
         type_reservation: initialData.type_reservation || 'BOOKING',
+        origine_reservation: initialData.origine_reservation || 'DESK',
         laundry_included: Boolean(initialData.laundry_included),
         laundry_price: initialData.laundry_price || 0,
         manual_price: initialData.manual_price || 0,
@@ -313,6 +328,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
       
       const client = clients.find(c => c.id === initialData.client_id);
       setSelectedClient(client || null);
+      setTarifCategory(client?.type_client === 'SOCIETE' ? 'SOCIETE' : client?.type_client === 'TOUR_OPERATEUR' ? 'TOUR_OPERATEUR' : 'PUBLIC');
     } else if (isOpen && !initialData) {
       setFormData({
         client_id: undefined,
@@ -323,15 +339,19 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
         montant_total: 0,
         statut: 'CONFIRMEE',
         type_reservation: 'BOOKING',
+        origine_reservation: 'DESK',
         laundry_included: false,
         laundry_price: 0,
         manual_price: 0,
         exchange_rate: 0,
+        ...prefill,
       });
       setDiscountPercent(0);
       setDiscountMode('none');
       setSelectedRoom(null);
       setSelectedClient(null);
+      setTarifCategory('PUBLIC');
+      setOccupants([]);
       setExchangeRate('');
       setExtraServices([]);
     }
@@ -341,7 +361,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
     setShowAvailabilityModal(false);
     setClientSearchTerm('');
     setShowAllClients(false);
-  }, [initialData, isOpen, rooms, clients]);
+  }, [initialData, isOpen, rooms, clients, prefill]);
 
   const handleRoomChange = async (roomId: number) => {
     const room = rooms.find(r => r.id === roomId);
@@ -354,7 +374,6 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
       try {
         const response = await api.get(`/api/hebergement/rooms/availability?room_id=${roomId}&date_arrivee=${formData.date_arrivee}&date_depart=${formData.date_depart}`);
         const data = response.data.data;
-        console.log('Room availability check:', data);
         if (!data.available) {
           setShowAvailabilityModal(true);
         }
@@ -369,6 +388,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   const handleClientChange = (clientId: number) => {
     const client = clients.find(c => c.id === clientId);
     setSelectedClient(client || null);
+    setTarifCategory(client?.type_client === 'SOCIETE' ? 'SOCIETE' : client?.type_client === 'TOUR_OPERATEUR' ? 'TOUR_OPERATEUR' : 'PUBLIC');
     setFormData({ ...formData, client_id: clientId });
   };
 
@@ -462,8 +482,18 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   const validateQuickClient = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!quickClientData.nom?.trim()) {
+    const typeClient = quickClientData.type_client || 'INDIVIDUEL';
+    if (typeClient === 'INDIVIDUEL' && !quickClientData.nom?.trim()) {
       errors.nom = 'Le nom est requis';
+    }
+    if (typeClient !== 'INDIVIDUEL' && !quickClientData.nom_societe?.trim()) {
+      errors.nom_societe = 'Le nom de société est requis';
+    }
+    for (const field of ['adresse', 'telephone', 'email'] as const) {
+      if (!quickClientData[field]?.trim()) errors[field] = `${field} est requis`;
+    }
+    if (typeClient === 'TOUR_OPERATEUR' && !quickClientData.reference_client?.trim()) {
+      errors.reference_client = 'La référence client est requise';
     }
     if (quickClientData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(quickClientData.email)) {
       errors.email = 'Email invalide';
@@ -590,7 +620,6 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
       if (!initialData && formData.room_id && formData.date_arrivee && formData.date_depart) {
         try {
           const response = await api.get(`/api/hebergement/rooms/availability?room_id=${formData.room_id}&date_arrivee=${formData.date_arrivee}&date_depart=${formData.date_depart}`);
-          console.log('Availability check in submit:', response.data);
           if (!response.data.data.available) {
             setShowAvailabilityModal(true);
             setIsSubmitting(false);
@@ -622,6 +651,11 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
         laundry_price: formData.laundry_price || 0,
         manual_price: formData.manual_price || 0,
         exchange_rate: parseFloat(exchangeRate) || 39.76,
+        tarif_category: tarifCategory,
+        occupants: occupants.map((occupant) => ({
+          ...occupant,
+          room_id: Number(occupant.room_id),
+        })),
       };
 
       if (initialData) {
@@ -676,6 +710,17 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
             <p className="text-muted">Chargement des données...</p>
             <p className="text-muted text-sm">Clients et chambres</p>
           </div>
+          <label className="block text-sm font-medium text-primary mt-3">Origine de la réservation *</label>
+          <select
+            value={formData.origine_reservation || 'DESK'}
+            onChange={(event) => setFormData(prev => ({ ...prev, origine_reservation: event.target.value as Reservation['origine_reservation'] }))}
+            className="w-full p-2 rounded-lg border border-base bg-surface text-primary"
+            disabled={isSubmitting}
+          >
+            <option value="TELEPHONE">Téléphone</option>
+            <option value="DESK">Desk / Réception</option>
+            <option value="MAIL">Email</option>
+          </select>
         </div>
       </Modal>
     );
@@ -900,6 +945,80 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                   <AlertCircle size={11} /> {errors.room_id}
                 </p>
               )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-primary">Tarif appliqué *</label>
+              <select
+                value={tarifCategory}
+                onChange={(e) => setTarifCategory(e.target.value as typeof tarifCategory)}
+                className="input-field w-full text-sm py-2.5 px-3.5 rounded-lg"
+                disabled={isSubmitting}
+              >
+                <option value="PUBLIC">Public</option>
+                <option value="SOCIETE">Société</option>
+                <option value="TOUR_OPERATEUR">Tour opérateur (T.O.)</option>
+              </select>
+              <p className="text-xs text-muted">Le montant utilise la grille tarifaire 2026 correspondante.</p>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-base p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-primary">Occupants</h4>
+                  <p className="text-xs text-muted">Chaque occupant peut être affecté à une chambre différente.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOccupants((current) => [...current, { nom: '', prenom: '', room_id: formData.room_id || '', telephone: '', email: '' }])}
+                  className="px-3 py-1.5 rounded-lg bg-accent text-black text-xs font-semibold"
+                  disabled={isSubmitting}
+                >
+                  Ajouter un occupant
+                </button>
+              </div>
+              {occupants.map((occupant, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
+                  <input
+                    value={occupant.nom}
+                    onChange={(e) => setOccupants((current) => current.map((item, i) => i === index ? { ...item, nom: e.target.value } : item))}
+                    placeholder="Nom *"
+                    className="input-field w-full text-sm py-2 px-3 rounded-lg"
+                    disabled={isSubmitting}
+                  />
+                  <input
+                    value={occupant.prenom}
+                    onChange={(e) => setOccupants((current) => current.map((item, i) => i === index ? { ...item, prenom: e.target.value } : item))}
+                    placeholder="Prénom"
+                    className="input-field w-full text-sm py-2 px-3 rounded-lg"
+                    disabled={isSubmitting}
+                  />
+                  <select
+                    value={occupant.room_id}
+                    onChange={(e) => setOccupants((current) => current.map((item, i) => i === index ? { ...item, room_id: Number(e.target.value) || '' } : item))}
+                    className="input-field w-full text-sm py-2 px-3 rounded-lg"
+                    disabled={isSubmitting}
+                  >
+                    <option value="">Chambre *</option>
+                    {rooms.map((room) => <option key={room.id} value={room.id}>Ch. {room.numero}</option>)}
+                  </select>
+                  <input
+                    value={occupant.telephone}
+                    onChange={(e) => setOccupants((current) => current.map((item, i) => i === index ? { ...item, telephone: e.target.value } : item))}
+                    placeholder="Téléphone"
+                    className="input-field w-full text-sm py-2 px-3 rounded-lg"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setOccupants((current) => current.filter((_, i) => i !== index))}
+                    className="px-3 py-2 rounded-lg border border-red-500/40 text-red-400 text-sm"
+                    disabled={isSubmitting}
+                  >
+                    Retirer
+                  </button>
+                </div>
+              ))}
             </div>
 
             {/* Dates */}
