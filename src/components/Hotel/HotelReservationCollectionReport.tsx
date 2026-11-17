@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Clipboard, Printer, Save } from 'lucide-react';
+import { Clipboard, FileText, Printer, Save } from 'lucide-react';
 import { formatCurrency } from '../../utils/data';
 import { reservationService, type HotelReservationCollectionReport as CollectionReport } from '../../services/reservation.service';
 import type { Reservation, Room } from '../../types/hotel.types';
@@ -33,8 +33,17 @@ const displayDate = (value: string) => {
 
 export const HotelReservationCollectionReport: React.FC<Props> = ({ reservations, rooms, refreshTrigger }) => {
   const today = localDate();
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
+  const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedMonth, setSelectedMonth] = useState(today.slice(0, 7));
+  const [monthYear = '', monthNumber = ''] = selectedMonth.split('-');
+  const monthLastDay = selectedMonth
+    ? String(new Date(Number(monthYear), Number(monthNumber), 0).getDate()).padStart(2, '0')
+    : '';
+  const startDate = period === 'daily' ? selectedDate : `${selectedMonth}-01`;
+  const endDate = period === 'daily'
+    ? selectedDate
+    : selectedMonth ? `${selectedMonth}-${monthLastDay}` : '';
   const [report, setReport] = useState<CollectionReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -122,6 +131,153 @@ export const HotelReservationCollectionReport: React.FC<Props> = ({ reservations
     }
   };
 
+  const downloadPdf = async () => {
+    if (!report) return;
+    try {
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 12;
+      const tableWidth = pageWidth - margin * 2;
+      let y = 16;
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      pdf.setTextColor(34, 45, 62);
+      pdf.text('Royal Palace - Rapport des encaissements', margin, y);
+      y += 8;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(90, 100, 112);
+      pdf.text(`${period === 'daily' ? 'Rapport journalier' : 'Rapport mensuel'} | ${displayDate(startDate)} - ${displayDate(endDate)}`, margin, y);
+      y += 8;
+
+      pdf.setFillColor(245, 246, 248);
+      pdf.roundedRect(margin, y, tableWidth, 18, 2, 2, 'F');
+      pdf.setFontSize(9);
+      pdf.setTextColor(90, 100, 112);
+      pdf.text('TOTAL REELLEMENT ENCAISSE', margin + 5, y + 6);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(14);
+      pdf.setTextColor(34, 45, 62);
+      pdf.text(formatCurrency(report.totalCollected), margin + 5, y + 14);
+      y += 24;
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(34, 45, 62);
+      pdf.text('Encaissements par mode de paiement', margin, y);
+      y += 4;
+      const paymentColWidth = tableWidth / 4;
+      const paymentRowHeight = 12;
+      paymentMethods.forEach(({ key, label }, index) => {
+        const col = index % 4;
+        const row = Math.floor(index / 4);
+        const x = margin + col * paymentColWidth;
+        const top = y + row * paymentRowHeight;
+        pdf.setFillColor(row % 2 === 0 ? 248 : 255, 249, 251);
+        pdf.setDrawColor(225, 229, 234);
+        pdf.rect(x, top, paymentColWidth, paymentRowHeight, 'FD');
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(90, 100, 112);
+        pdf.text(label, x + 3, top + 5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(34, 45, 62);
+        pdf.text(formatCurrency(report.paymentMethods[key] || 0), x + 3, top + 10);
+      });
+      y += Math.ceil(paymentMethods.length / 4) * paymentRowHeight + 8;
+
+      const columns = [
+        { label: 'Chambre', width: 18 },
+        { label: 'Client', width: 45 },
+        { label: 'Arrivée', width: 24 },
+        { label: 'Départ', width: 24 },
+        { label: 'Origine', width: 27 },
+        { label: 'Statut', width: 28 },
+        { label: 'Total (Ar)', width: 35 },
+        { label: 'Payé (Ar)', width: 35 },
+        { label: 'Reste (Ar)', width: 35 },
+      ];
+      const drawPageHeading = (continued: boolean) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.setTextColor(34, 45, 62);
+        pdf.text(`Reservations presentes sur la periode${continued ? ' - suite' : ''}`, margin, 14);
+      };
+      const drawTableHeader = (top: number) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(7);
+        pdf.setFillColor(34, 45, 62);
+        pdf.setDrawColor(218, 224, 232);
+        pdf.setTextColor(255, 255, 255);
+        let x = margin;
+        columns.forEach((column) => {
+          pdf.rect(x, top, column.width, 9, 'FD');
+          pdf.text(column.label, x + 2, top + 6);
+          x += column.width;
+        });
+      };
+      drawPageHeading(false);
+      y = 18;
+      drawTableHeader(y);
+      y += 9;
+      reservationsForPeriod.forEach((reservation, index) => {
+        const total = Number(reservation.montant_total) || 0;
+        const paid = Number(reservation.montant_paye) || 0;
+        const values = [
+          reservation.room?.numero || rooms.find((room) => room.id === reservation.room_id)?.numero || `#${reservation.room_id}`,
+          [reservation.client?.prenom, reservation.client?.nom].filter(Boolean).join(' ') || `Client #${reservation.client_id}`,
+          displayDate(String(reservation.date_arrivee).slice(0, 10)),
+          displayDate(String(reservation.date_depart).slice(0, 10)),
+          reservation.type_reservation === 'BOOKING' ? 'Booking' : 'Sur place',
+          reservation.statut,
+          formatCurrency(total),
+          formatCurrency(paid),
+          formatCurrency(Math.max(0, total - paid)),
+        ];
+        const cellLines = values.map((value, cellIndex) =>
+          pdf.splitTextToSize(String(value), columns[cellIndex].width - 4) as string[]
+        );
+        const rowHeight = Math.max(9, ...cellLines.map((lines) => lines.length * 3.5 + 3));
+        if (y + rowHeight > pageHeight - 14) {
+          pdf.addPage();
+          drawPageHeading(true);
+          y = 18;
+          drawTableHeader(y);
+          y += 9;
+        }
+        let x = margin;
+        cellLines.forEach((lines, cellIndex) => {
+          pdf.setFillColor(index % 2 === 0 ? 255 : 247, index % 2 === 0 ? 255 : 249, index % 2 === 0 ? 255 : 251);
+          pdf.setDrawColor(225, 229, 234);
+          pdf.rect(x, y, columns[cellIndex].width, rowHeight, 'FD');
+          pdf.setFont('helvetica', cellIndex === 0 ? 'bold' : 'normal');
+          pdf.setFontSize(7);
+          pdf.setTextColor(45, 54, 66);
+          pdf.text(lines, x + 2, y + 5);
+          x += columns[cellIndex].width;
+        });
+        y += rowHeight;
+      });
+
+      for (let page = 1; page <= pdf.getNumberOfPages(); page += 1) {
+        pdf.setPage(page);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
+        pdf.setTextColor(135, 145, 157);
+        pdf.text(`Royal Palace | ${displayDate(startDate)} - ${displayDate(endDate)}`, margin, pageHeight - 6);
+        pdf.text(`${page} / ${pdf.getNumberOfPages()}`, pageWidth - margin, pageHeight - 6, { align: 'right' });
+      }
+      pdf.setProperties({ title: 'Rapport des encaissements hôtel', creator: 'Royal Palace' });
+      pdf.save(`hotel-encaissements-${period === 'daily' ? startDate : selectedMonth}.pdf`);
+    } catch (error) {
+      console.error('Erreur génération du PDF des encaissements hôtel:', error);
+      setMessage('Impossible de générer le PDF. Réessayez.');
+    }
+  };
+
   return (
     <section className="space-y-4">
       <div className="print:hidden">
@@ -133,22 +289,26 @@ export const HotelReservationCollectionReport: React.FC<Props> = ({ reservations
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <h3 className="text-lg font-semibold text-primary">Encaissements des réservations hôtel</h3>
-            <p className="text-xs text-muted">Tous les paiements des réservations, en ligne ou sur place.</p>
+            <p className="text-xs text-muted">Encaissements enregistrés pendant la journée ou le mois sélectionné.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex rounded-lg border border-base bg-surface-2 p-1">
+              <button type="button" onClick={() => setPeriod('daily')} aria-pressed={period === 'daily'} className={`rounded-md px-3 py-2 text-sm ${period === 'daily' ? 'bg-accent text-black' : 'text-muted'}`}>Journalier</button>
+              <button type="button" onClick={() => setPeriod('monthly')} aria-pressed={period === 'monthly'} className={`rounded-md px-3 py-2 text-sm ${period === 'monthly' ? 'bg-accent text-black' : 'text-muted'}`}>Mensuel</button>
+            </div>
             <label className="text-xs text-secondary">
-              <span className="mb-1 block font-semibold">Date de début</span>
-              <input type="date" value={startDate} max={endDate} onChange={(event) => setStartDate(event.target.value)} className="rounded-lg border border-base bg-surface-2 px-3 py-2 text-sm text-primary" />
-            </label>
-            <label className="text-xs text-secondary">
-              <span className="mb-1 block font-semibold">Date de fin</span>
-              <input type="date" value={endDate} min={startDate} onChange={(event) => setEndDate(event.target.value)} className="rounded-lg border border-base bg-surface-2 px-3 py-2 text-sm text-primary" />
+              <span className="mb-1 block font-semibold">{period === 'daily' ? 'Journée' : 'Mois'}</span>
+              {period === 'daily' ? (
+                <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} className="rounded-lg border border-base bg-surface-2 px-3 py-2 text-sm text-primary" />
+              ) : (
+                <input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} className="rounded-lg border border-base bg-surface-2 px-3 py-2 text-sm text-primary" />
+              )}
             </label>
           </div>
         </div>
 
         <div className="rounded-xl border border-accent/20 bg-surface-2 p-4">
-          <p className="text-xs text-muted">Total encaissé du {displayDate(startDate)} au {displayDate(endDate)}</p>
+          <p className="text-xs text-muted">Total encaissé {period === 'daily' ? 'le' : 'du mois de'} {period === 'daily' ? displayDate(startDate) : new Date(`${selectedMonth}-01T00:00:00`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</p>
           <p className="mt-1 text-2xl font-bold text-accent">{loading ? 'Chargement…' : formatCurrency(report?.totalCollected || 0)}</p>
         </div>
 
@@ -206,6 +366,9 @@ export const HotelReservationCollectionReport: React.FC<Props> = ({ reservations
           <div className="flex flex-col gap-2 sm:flex-row">
             <button type="button" onClick={() => void saveReport()} disabled={saving || loading || !report} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-black shadow-lg shadow-accent/20 transition-all hover:-translate-y-0.5 hover:shadow-accent/30 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0">
               <Save size={16} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+            <button type="button" onClick={() => void downloadPdf()} disabled={loading || !report} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-base bg-surface-2 px-4 py-2.5 text-sm font-semibold text-primary transition-all hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-60">
+              <FileText size={16} /> Télécharger PDF
             </button>
             <button type="button" onClick={() => window.print()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-base bg-surface-2 px-4 py-2.5 text-sm font-semibold text-primary transition-all hover:-translate-y-0.5 hover:border-accent hover:bg-accent/10">
               <Printer size={16} /> Imprimer

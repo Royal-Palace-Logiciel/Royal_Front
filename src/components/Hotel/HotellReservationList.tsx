@@ -67,6 +67,8 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
   const [expandedPayments, setExpandedPayments] = useState<ReservationPayment[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [enrichedReservations, setEnrichedReservations] = useState<Reservation[]>([]);
+  const [checkedOutReservationIds, setCheckedOutReservationIds] = useState<Set<number>>(new Set());
+  const [staysLoading, setStaysLoading] = useState(true);
   const [barSpendByReservation, setBarSpendByReservation] = useState<Record<number, number>>({});
 
   const handlePrintInvoice = async (reservation: Reservation) => {
@@ -133,6 +135,29 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
       loadReservations();
     }
   }, [loadReservations, refreshTrigger]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStaysLoading(true);
+    reservationService.getStays()
+      .then((stays) => {
+        if (!cancelled) {
+          setCheckedOutReservationIds(new Set(
+            stays.filter((stay) => stay.checkout_at).map((stay) => stay.reservation_id)
+          ));
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Erreur lors du chargement des séjours:', error);
+          toast.error('Impossible de vérifier les check-out des réservations.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setStaysLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [refreshTrigger]);
 
   // Clear encaissedIds when payment is cancelled
   useEffect(() => {
@@ -215,8 +240,8 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
 
     // Filter by tab (active vs history)
     const matchesTab = view === 'active'
-      ? !['TERMINEE', 'ANNULEE', 'NO_SHOW'].includes(res.statut)
-      : ['TERMINEE', 'ANNULEE', 'NO_SHOW'].includes(res.statut);
+      ? !['ANNULEE', 'NO_SHOW'].includes(res.statut) && !checkedOutReservationIds.has(res.id)
+      : ['ANNULEE', 'NO_SHOW'].includes(res.statut) || checkedOutReservationIds.has(res.id);
 
     // Custom status filtering based on user's requirements
     let matchesStatus = true;
@@ -278,7 +303,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
     0
   );
 
-  const isLoading = reservationsLoading || clientsLoading || roomsLoading;
+  const isLoading = reservationsLoading || clientsLoading || roomsLoading || staysLoading;
 
   // Ticket 80 mm de la réservation (prestations + historique des paiements)
   const handlePrintTicket = async (res: Reservation) => {

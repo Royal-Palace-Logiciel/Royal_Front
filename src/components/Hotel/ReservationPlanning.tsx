@@ -23,6 +23,7 @@ type ViewMode = 'grid' | 'month';
 interface ReservationPlanningProps {
   onCreate: (prefill?: Partial<Reservation>) => void;
   onDetails: (reservation: Reservation) => void;
+  onDataChange?: () => void;
   refreshTrigger?: number;
 }
 
@@ -80,7 +81,7 @@ const clientName = (reservation: Reservation) => [reservation.client?.prenom, re
   .join(' ')
   || `Réservation #${reservation.id}`;
 
-export const ReservationPlanning: React.FC<ReservationPlanningProps> = ({ onCreate, onDetails, refreshTrigger }) => {
+export const ReservationPlanning: React.FC<ReservationPlanningProps> = ({ onCreate, onDetails, onDataChange, refreshTrigger }) => {
   const { rooms, loading: roomsLoading, loadRooms } = useRooms();
   const { reservations, loading: reservationsLoading, loadReservations } = useReservations();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -169,6 +170,7 @@ export const ReservationPlanning: React.FC<ReservationPlanningProps> = ({ onCrea
       toast.success('Action effectuée');
       setContext(null);
       await Promise.all([loadRooms(), loadReservations()]);
+      onDataChange?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Action impossible');
     } finally {
@@ -185,6 +187,7 @@ export const ReservationPlanning: React.FC<ReservationPlanningProps> = ({ onCrea
       toast.success(`${selectedRooms.length} chambre(s) mise(s) à jour`);
       setSelectedCells(new Set());
       await loadRooms();
+      onDataChange?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Action groupée impossible');
     } finally {
