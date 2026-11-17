@@ -131,10 +131,9 @@ const TabButton: React.FC<{
     <button
       onClick={onClick}
       className={`
-        flex-1 md:flex-none px-3 py-2.5 md:px-5 md:py-2.5 
-        rounded-xl text-xs md:text-sm font-medium transition-all 
-        flex items-center justify-center md:justify-start gap-1.5 md:gap-2
-        min-w-[45px] md:min-w-[120px]
+        flex w-full min-w-0 items-center justify-start gap-2 rounded-xl px-3 py-3
+        text-xs font-medium transition-all sm:justify-center md:w-auto md:min-w-[120px]
+        md:justify-start md:px-5 md:py-2.5 md:text-sm
         ${isActive
           ? 'bg-accent-4 text-accent shadow-soft-sm'
           : 'text-muted hover:text-primary hover:bg-surface-2'
@@ -419,9 +418,9 @@ const HotelPage: React.FC = () => {
         />
       </div>
 
-      {/* Tabs - Scrollable on Mobile */}
+      {/* Onglets en grille sur mobile, avec retour à la ligne sur écran intermédiaire */}
       <div className="relative">
-        <div className="flex overflow-x-auto gap-1 bg-surface border border-base rounded-2xl p-1 shadow-soft-sm scrollbar-hide">
+        <div className="grid grid-cols-2 gap-1 rounded-2xl border border-base bg-surface p-2 shadow-soft-sm sm:grid-cols-3 md:flex md:flex-wrap">
           {visibleTabs.map(tab => (
             <TabButton
               key={tab.id}
@@ -431,8 +430,6 @@ const HotelPage: React.FC = () => {
             />
           ))}
         </div>
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-surface to-transparent pointer-events-none md:hidden" />
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-surface to-transparent pointer-events-none md:hidden" />
       </div>
 
       {/* Tab Content */}
