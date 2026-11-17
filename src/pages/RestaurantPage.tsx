@@ -217,6 +217,14 @@ export const RestaurantPage: React.FC = () => {
       });
       if (res.success) {
         await fetchOrders();
+        try {
+          const productsRes = await restaurantService.getProducts({ actif: true });
+          if (productsRes.success && Array.isArray(productsRes.data)) {
+            setProducts(productsRes.data as Product[]);
+          }
+        } catch (stockRefreshError) {
+          console.warn('Rafraîchissement du stock du menu échoué:', stockRefreshError);
+        }
         setShowOrderModal(false);
         return;
       }
@@ -385,6 +393,31 @@ export const RestaurantPage: React.FC = () => {
   };
 
   // Produits (mock)
+  const syncRestaurantMenuStock = async (productId: number, desiredQuantity: number) => {
+    const locationsResponse = await restaurantService.getStockLocations();
+    const restaurantLocation = locationsResponse.data?.find(
+      (location: { nom: string }) => location.nom.toLowerCase().includes('restaurant')
+    );
+    if (!restaurantLocation) throw new Error('Aucun emplacement de stock Restaurant n’est configuré.');
+
+    const stocksResponse = await restaurantService.getStocks({ location_id: restaurantLocation.id });
+    const currentStock = (stocksResponse.data || []).find(
+      (item: { product_id: number }) => Number(item.product_id) === Number(productId)
+    );
+    const difference = Number(desiredQuantity) - Number(currentStock?.quantite || 0);
+    if (difference === 0) return;
+
+    await restaurantService.adjustStock({
+      product_id: productId,
+      location_id: restaurantLocation.id,
+      type_mouvement: difference > 0 ? 'ENTREE' : 'SORTIE',
+      quantite: Math.abs(difference),
+      source_module: 'RESTAURANT_MENU',
+      reference_id: productId,
+      commentaire: 'Ajustement du stock depuis la fiche du menu',
+    });
+  };
+
   const handleAddProduct = async (formData: any) => {
     try {
       const res = await restaurantService.createProduct({ ...formData, prix_achat: 0, couleur: '' });
@@ -395,7 +428,11 @@ export const RestaurantPage: React.FC = () => {
         await restaurantService.deleteProduct(res.data.id);
         throw recipeError;
       }
-      setProducts(prev => [...prev, res.data as Product]);
+      await syncRestaurantMenuStock(Number(res.data.id), Number(formData.quantite_stock || 0));
+      const productsRes = await restaurantService.getProducts({ actif: true });
+      setProducts(productsRes.success && Array.isArray(productsRes.data)
+        ? productsRes.data as Product[]
+        : prev => [...prev, res.data as Product]);
       setShowProductModal(false);
     } catch (error) {
       console.error('Erreur création produit', error);
@@ -432,9 +469,16 @@ export const RestaurantPage: React.FC = () => {
       const res = await restaurantService.updateProduct(editingProduct.id, formData);
       if (!res.success) throw new Error(res.message || 'Modification du produit impossible.');
       await restaurantService.saveProductRecipe(editingProduct.id, formData.ingredients || []);
-      setProducts(prev => prev.map(p => p.id === editingProduct.id
-        ? { ...res.data as Product, couleur: p.couleur }
-        : p));
+      await syncRestaurantMenuStock(editingProduct.id, Number(formData.quantite_stock || 0));
+      const productsRes = await restaurantService.getProducts({ actif: true });
+      setProducts(productsRes.success && Array.isArray(productsRes.data)
+        ? (productsRes.data as Product[]).map(product => ({
+          ...product,
+          couleur: products.find(item => item.id === product.id)?.couleur,
+        }))
+        : prev => prev.map(p => p.id === editingProduct.id
+          ? { ...res.data as Product, couleur: p.couleur }
+          : p));
       setEditingProduct(null);
       setShowProductModal(false);
     } catch (error) {

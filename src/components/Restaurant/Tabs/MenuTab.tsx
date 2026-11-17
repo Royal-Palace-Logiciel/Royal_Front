@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Badge, Button, Modal } from '../../UI';
 import { formatCurrency } from '../../../utils/data';
-import { Plus, Edit, Trash2, Search, UtensilsCrossed, Eye, X, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, UtensilsCrossed, Eye, X, Loader2, Package } from 'lucide-react';
 import { getRestaurantProductColors } from '../../../utils/restaurantProductColors';
 import type { Product, Category } from '../types';
 import * as restaurantService from '../../../services/restaurantService';
@@ -221,6 +221,12 @@ export const MenuTab: React.FC<MenuTabProps> = ({
                         >
                           {p.nom}
                         </h4>
+                        <p
+                          className="mb-3 flex items-center gap-1.5 text-xs font-medium"
+                          style={{ color: customBg ? 'rgba(255,255,255,0.85)' : 'var(--color-subtle)' }}
+                        >
+                          <Package size={13} /> Stock : {Number(p.quantite_stock ?? 0)} {p.unite || 'pièce(s)'}
+                        </p>
                         {p.code && (
                           <p
                             className="text-xs mb-3 font-mono"
