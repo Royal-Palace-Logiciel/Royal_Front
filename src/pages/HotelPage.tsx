@@ -191,7 +191,6 @@ const HotelPage: React.FC = () => {
   const [maintenanceRoomId, setMaintenanceRoomId] = useState<number | null>(null);
   const [paymentReservation, setPaymentReservation] = useState<Reservation | null>(null);
   const [paymentType, setPaymentType] = useState<'TOTAL' | 'PARTIEL'>('TOTAL');
-  const [partialPaymentAmount, setPartialPaymentAmount] = useState('');
   const [paymentAllocations, setPaymentAllocations] = useState<Partial<Record<HotelPaymentMethod, string>>>({});
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const paymentRequestLock = useRef(false);
@@ -251,7 +250,6 @@ const HotelPage: React.FC = () => {
     const due = Math.max(0, Number(res.montant_total || 0) - Number(res.montant_paye || 0));
     setPaymentReservation(res);
     setPaymentType('TOTAL');
-    setPartialPaymentAmount('');
     setPaymentAllocations({ ESPECES: due > 0 ? String(due) : '' });
    
     paymentIdempotencyKey.current = globalThis.crypto?.randomUUID?.()
@@ -283,11 +281,11 @@ const HotelPage: React.FC = () => {
     if (!paymentReservation) return;
     if (paymentRequestLock.current) return;
     const due = Math.max(0, Number(paymentReservation.montant_total || 0) - Number(paymentReservation.montant_paye || 0));
-    const amount = paymentType === 'TOTAL' ? due : Number(partialPaymentAmount);
     const modes = Object.entries(paymentAllocations)
       .filter(([, value]) => value !== undefined)
       .map(([moyen_paiement, value]) => ({ moyen_paiement: moyen_paiement as HotelPaymentMethod, montant: Number(value) }));
     const allocated = modes.reduce((sum, mode) => sum + (Number.isFinite(mode.montant) ? mode.montant : 0), 0);
+    const amount = Math.round(allocated * 100) / 100;
     if (!Number.isFinite(amount) || amount <= 0 || amount > due) {
       showToast('Le montant à régler doit être positif et ne peut pas dépasser le solde restant.', 'error');
       return;
@@ -298,6 +296,10 @@ const HotelPage: React.FC = () => {
     }
     if (Math.round(allocated * 100) !== Math.round(amount * 100)) {
       showToast('La somme des modes de paiement doit être exactement égale au montant à régler.', 'error');
+      return;
+    }
+    if (paymentType === 'TOTAL' && Math.round(amount * 100) !== Math.round(due * 100)) {
+      showToast('Le paiement total doit couvrir tout le solde restant.', 'error');
       return;
     }
     paymentRequestLock.current = true;
@@ -323,7 +325,6 @@ const HotelPage: React.FC = () => {
   const paymentDue = paymentReservation
     ? Math.max(0, Number(paymentReservation.montant_total || 0) - Number(paymentReservation.montant_paye || 0))
     : 0;
-  const paymentTarget = paymentType === 'TOTAL' ? paymentDue : Number(partialPaymentAmount);
   const paymentAllocated = Object.values(paymentAllocations)
     .reduce((sum, value) => sum + (value === undefined || value === '' ? 0 : Number(value) || 0), 0);
   const canAuthorizeFree = ['admin', 'manager'].includes(String(currentUser?.role || '').toLowerCase());
@@ -718,22 +719,6 @@ const HotelPage: React.FC = () => {
                 <span>Paiement partiel</span>
               </label>
             </div>
-            {paymentType === 'PARTIEL' && (
-              <label className="mb-4 block space-y-1.5 text-sm">
-                <span className="font-medium text-primary">Montant que le client règle maintenant</span>
-                <input
-                  type="number"
-                  min="0.01"
-                  max={paymentDue}
-                  step="0.01"
-                  value={partialPaymentAmount}
-                  onChange={(event) => { setPartialPaymentAmount(event.target.value); }}
-                  className="input-field w-full rounded-lg px-3 py-2.5"
-                  placeholder="Saisir le montant en Ar"
-                  disabled={isSubmittingPayment}
-                />
-              </label>
-            )}
             <div className="mb-3 space-y-2">
               <p className="text-sm font-semibold text-primary">Modes de paiement</p>
               {hotelPaymentMethods.map(({ value, label }) => {
@@ -778,9 +763,9 @@ const HotelPage: React.FC = () => {
                 );
               })}
             </div>
-            <div className="mb-3 flex justify-between rounded-lg bg-surface-2 px-3 py-2 text-sm">
-              <span className="text-muted">À régler maintenant</span><strong>{formatCurrency(Number.isFinite(paymentTarget) ? paymentTarget : 0)}</strong>
-              <span className="text-muted">Répartition</span><strong>{formatCurrency(paymentAllocated)}</strong>
+            <div className="mb-3 flex flex-wrap justify-between gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm">
+              <span className="text-muted">Montant encaissé (selon les modes)</span><strong>{formatCurrency(paymentAllocated)}</strong>
+              <span className="text-muted">Solde après encaissement</span><strong>{formatCurrency(Math.max(0, paymentDue - paymentAllocated))}</strong>
             </div>
             </div>
             <div className="flex shrink-0 gap-3 border-t border-base bg-surface p-4 sm:px-5">
