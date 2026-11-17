@@ -25,9 +25,17 @@ import { MaintenanceWorker } from '../../types/hotel.types';
 import { MaintenanceFormModal } from './Modal/MaintenanceFormModal';
 import { WorkerFormModal } from './Modal/WorkerFormModal';
 
-interface MaintenanceManagerProps { initialRoomId?: number | null; onMaintenanceCompleted?: () => void; }
+interface MaintenanceManagerProps {
+  initialRoomId?: number | null;
+  onDataChange?: () => void;
+  onMaintenanceCompleted?: () => void;
+}
 
-export const MaintenanceManager: React.FC<MaintenanceManagerProps> = ({ initialRoomId = null, onMaintenanceCompleted }) => {
+export const MaintenanceManager: React.FC<MaintenanceManagerProps> = ({
+  initialRoomId = null,
+  onDataChange,
+  onMaintenanceCompleted,
+}) => {
   const { 
     maintenances, 
     stats, 
@@ -93,6 +101,7 @@ export const MaintenanceManager: React.FC<MaintenanceManagerProps> = ({ initialR
       setIsDeleteModalOpen(false);
       setMaintenanceToDelete(null);
       await loadAll();
+      onDataChange?.();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Erreur lors de la suppression');
     } finally {
@@ -108,6 +117,7 @@ export const MaintenanceManager: React.FC<MaintenanceManagerProps> = ({ initialR
 
       await updateStatus(id, statut);
       
+      onDataChange?.();
       if (['TERMINE', 'ANNULE'].includes(statut)) onMaintenanceCompleted?.();
       
       toast.success(`Statut mis à jour: ${statut}`);
@@ -131,6 +141,7 @@ export const MaintenanceManager: React.FC<MaintenanceManagerProps> = ({ initialR
       setIsModalOpen(false);
       setSelectedMaintenance(null);
       await loadAll();
+      onDataChange?.();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Erreur lors de la sauvegarde');
     }

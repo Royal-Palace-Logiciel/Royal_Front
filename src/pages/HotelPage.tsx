@@ -31,7 +31,6 @@ import {
   Package,
   History
 } from 'lucide-react';
-import { useHDA } from '../context/HDAContext';
 import { formatCurrency, formatDate } from '../utils/data';
 import { RoomList } from '../components/Hotel/HotelRoomList';
 import { ReservationList } from '../components/Hotel/HotellReservationList';
@@ -40,12 +39,15 @@ import { EquipmentManager } from '../components/Hotel/HotelEquipmentManager';
 import { MaintenanceManager } from '../components/Hotel/HotelMaintenanceManager';
 import { HousekeepingManager } from '../components/Hotel/HotelHousekeepingManager';
 import { HotelReservationCollectionReport } from '../components/Hotel/HotelReservationCollectionReport';
+import { HotelDailyOperationsReport } from '../components/Hotel/HotelDailyOperationsReport';
+import { HotelDailyReport } from '../components/Hotel/HotelDailyReport';
 import { ClientSearch } from '../components/Hotel/ClientSearch';
 import { RoomFormModal } from '../components/Hotel/Modal/RoomFormModal';
 import { ReservationFormModal } from '../components/Hotel/Modal/ReservationFormModal';
 import { useRooms } from '../hooks/useRooms';
 import { useReservations } from '../hooks/useReservations';
 import { reservationService } from '../services/reservation.service';
+import { maintenanceService } from '../services/maintenance.service';
 import type { HotelPaymentMethod } from '../services/reservation.service';
 import { Room, Reservation } from '../types/hotel.types';
 import { StockManager, CaisseManager } from '../components/StockManager';
@@ -150,13 +152,7 @@ const TabButton: React.FC<{
 
 // Composant principal
 const HotelPage: React.FC = () => {
-  const context = useHDA();
   const { showToast } = useToast();
-
-  const {
-    getModuleCaisseSolde,
-    dispatch,
-  } = context;
 
   const {
     rooms,
@@ -183,10 +179,14 @@ const HotelPage: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [reservationPrefill, setReservationPrefill] = useState<Partial<Reservation> | undefined>();
+  const [reservationScheduleLocked, setReservationScheduleLocked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [dataRefreshKey, setDataRefreshKey] = useState(0);
+  const [hotelRevenue, setHotelRevenue] = useState<number | null>(null);
+  const [checkedOutReservationIds, setCheckedOutReservationIds] = useState<Set<number> | null>(null);
+  const [activeMaintenanceCount, setActiveMaintenanceCount] = useState<number | null>(null);
   const [equipmentRoomId, setEquipmentRoomId] = useState<number | null>(null);
   const [housekeepingRoomId, setHousekeepingRoomId] = useState<number | null>(null);
   const [maintenanceRoomId, setMaintenanceRoomId] = useState<number | null>(null);
@@ -202,24 +202,52 @@ const HotelPage: React.FC = () => {
   const roomsData = Array.isArray(rooms) ? rooms : [];
   const reservationsData = Array.isArray(reservations) ? reservations : [];
 
-  // Récupérer les données de caisse
-  let caisseData = { solde: 0, entrees: 0, sorties: 0 };
-  try {
-    if (typeof getModuleCaisseSolde === 'function') {
-      caisseData = getModuleCaisseSolde('hotel') || { solde: 0, entrees: 0, sorties: 0 };
-    }
-  } catch (err) {
-    console.error('Erreur lors de la récupération des données de caisse:', err);
-  }
+  useEffect(() => {
+    let active = true;
+    setHotelRevenue(null);
+    setCheckedOutReservationIds(null);
+    setActiveMaintenanceCount(null);
 
-  // Calcul dynamique du revenu basé sur les réservations au statut 'TERMINEE'
-  const calculatedRevenue = reservationsData
-    .filter(r => r?.statut === 'TERMINEE')
-    .reduce((sum, r) => sum + (Number(r?.montant_encaisse ?? r?.montant_paye) || 0), 0);
+    const loadDashboardMetrics = async () => {
+      const [reservationStatsResult, staysResult, maintenanceStatsResult] = await Promise.allSettled([
+        reservationService.getReservationStats(),
+        reservationService.getStays(),
+        maintenanceService.getMaintenanceStats(),
+      ]);
+      if (!active) return;
 
-  const finalSolde = (caisseData.solde && caisseData.solde > 0) ? caisseData.solde : calculatedRevenue;
+      if (reservationStatsResult.status === 'fulfilled') {
+        setHotelRevenue(Number(reservationStatsResult.value?.montant_encaisse) || 0);
+      } else {
+        console.error('Erreur lors du chargement des encaissements hôtel:', reservationStatsResult.reason);
+        showToast('Impossible de charger le revenu hôtel.', 'error');
+      }
 
-  // Mise à jour du statut vers TERMINEE pour l'encaissement
+      if (staysResult.status === 'fulfilled') {
+        setCheckedOutReservationIds(new Set(
+          staysResult.value.filter((stay) => stay.checkout_at).map((stay) => stay.reservation_id)
+        ));
+      } else {
+        console.error('Erreur lors du chargement des check-out:', staysResult.reason);
+        showToast('Impossible de vérifier les check-out des réservations.', 'error');
+      }
+
+      if (maintenanceStatsResult.status === 'fulfilled') {
+        const activeStatuses = new Set(['OUVERT', 'EN_COURS']);
+        const count = (maintenanceStatsResult.value?.par_statut || [])
+          .filter((status: { statut: string }) => activeStatuses.has(String(status.statut).toUpperCase()))
+          .reduce((total: number, status: { total: number }) => total + Number(status.total || 0), 0);
+        setActiveMaintenanceCount(count);
+      } else {
+        console.error('Erreur lors du chargement des maintenances:', maintenanceStatsResult.reason);
+        showToast('Impossible de charger les maintenances en cours.', 'error');
+      }
+    };
+
+    void loadDashboardMetrics();
+    return () => { active = false; };
+  }, [dataRefreshKey]);
+
   const handleEncaisser = (res: Reservation) => {
     const due = Math.max(0, Number(res.montant_total || 0) - Number(res.montant_paye || 0));
     setPaymentReservation(res);
@@ -243,7 +271,6 @@ const HotelPage: React.FC = () => {
     try {
       setIsLoading(true);
       await reservationService.updateReservationStatus(res.id, 'CHECKED_IN');
-      await Promise.all([refreshRooms(), loadReservations()]);
       setDataRefreshKey((prev) => prev + 1);
     } catch (error: any) {
       console.error("Erreur lors du check-in", error);
@@ -282,7 +309,6 @@ const HotelPage: React.FC = () => {
         modes_paiement: modes,
         idempotency_key: paymentIdempotencyKey.current,
       });
-      await Promise.all([refreshRooms(), loadReservations()]);
       setDataRefreshKey((prev) => prev + 1);
       setPaymentReservation(null);
      
@@ -317,7 +343,7 @@ const HotelPage: React.FC = () => {
       }
     };
     void loadData();
-  }, [refreshRooms, loadReservations]);
+  }, [refreshRooms, loadReservations, dataRefreshKey]);
 
   // Statistiques sécurisées
   const safeRooms = roomsData;
@@ -327,8 +353,12 @@ const HotelPage: React.FC = () => {
   const totalRooms = safeRooms.length;
   const occupiedRooms = safeRooms.filter(r => r?.statut === 'OCCUPEE').length;
   const availableRooms = safeRooms.filter(r => r?.statut === 'LIBRE').length;
-  const activeReservations = safeReservations.filter(r => r?.statut === 'CONFIRMEE').length;
-  const maintenanceCount = 0;
+  const activeReservations = checkedOutReservationIds
+    ? safeReservations.filter((reservation) =>
+      !['ANNULEE', 'NO_SHOW'].includes(String(reservation.statut).toUpperCase())
+      && !checkedOutReservationIds.has(reservation.id)
+    ).length
+    : null;
 
   if (isLoading && roomsData.length === 0) {
     return (
@@ -372,7 +402,10 @@ const HotelPage: React.FC = () => {
         {/* Actions - Mobile Friendly */}
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setIsReservationModalOpen(true)}
+            onClick={() => {
+              setReservationScheduleLocked(false);
+              setIsReservationModalOpen(true);
+            }}
             className="flex-1 sm:flex-none px-3 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-medium text-black bg-accent hover:bg-accent/90 transition-colors flex items-center justify-center gap-1.5"
           >
             <Plus size={14} className="md:w-4 md:h-4" />
@@ -392,13 +425,13 @@ const HotelPage: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatsCard
           label="Revenu Hôtel"
-          value={formatCurrency(finalSolde)}
+          value={hotelRevenue === null ? '—' : formatCurrency(hotelRevenue)}
           icon={Hotel}
           color="accent"
         />
         <StatsCard
           label="Réservations"
-          value={activeReservations}
+          value={activeReservations ?? '—'}
           subValue="actives"
           icon={Calendar}
           color="green"
@@ -412,7 +445,7 @@ const HotelPage: React.FC = () => {
         />
         <StatsCard
           label="Maintenance"
-          value={maintenanceCount}
+          value={activeMaintenanceCount ?? '—'}
           subValue="en cours"
           icon={Hammer}
           color="orange"
@@ -464,14 +497,17 @@ const HotelPage: React.FC = () => {
           <div className="overflow-x-auto">
             <ReservationPlanning
               refreshTrigger={dataRefreshKey}
+              onDataChange={() => setDataRefreshKey((prev) => prev + 1)}
               onCreate={(prefill) => {
                 setSelectedReservation(null);
                 setReservationPrefill(prefill);
+                setReservationScheduleLocked(true);
                 setIsReservationModalOpen(true);
               }}
               onDetails={(res) => {
                 setReservationPrefill(undefined);
                 setSelectedReservation(res);
+                setReservationScheduleLocked(true);
                 setIsReservationModalOpen(true);
               }}
             />
@@ -480,6 +516,7 @@ const HotelPage: React.FC = () => {
               onEdit={(res) => {
                 setReservationPrefill(undefined);
                 setSelectedReservation(res);
+                setReservationScheduleLocked(false);
                 setIsReservationModalOpen(true);
               }}
               onEncaisser={handleEncaisser}
@@ -536,6 +573,7 @@ const HotelPage: React.FC = () => {
               view="history"
               onEdit={(res) => {
                 setSelectedReservation(res);
+                setReservationScheduleLocked(false);
                 setIsReservationModalOpen(true);
               }}
               onEncaisser={handleEncaisser}
@@ -563,6 +601,7 @@ const HotelPage: React.FC = () => {
           <div className="overflow-x-auto">
             <MaintenanceManager
               initialRoomId={maintenanceRoomId}
+              onDataChange={() => setDataRefreshKey((prev) => prev + 1)}
               onMaintenanceCompleted={() => {
                 setMaintenanceRoomId(null);
                 setDataRefreshKey((prev) => prev + 1);
@@ -593,11 +632,19 @@ const HotelPage: React.FC = () => {
           </div>
         )}
         {activeTab === 'rapports' && (
-          <HotelReservationCollectionReport
-            reservations={reservationsData}
-            rooms={roomsData}
-            refreshTrigger={dataRefreshKey}
-          />
+          <div className="space-y-6">
+            <HotelReservationCollectionReport
+              reservations={reservationsData}
+              rooms={roomsData}
+              refreshTrigger={dataRefreshKey}
+            />
+            <HotelDailyOperationsReport
+              reservations={reservationsData}
+              rooms={roomsData}
+              refreshTrigger={dataRefreshKey}
+            />
+            <HotelDailyReport refreshTrigger={dataRefreshKey} />
+          </div>
         )}
         {(userIsAdmin || userIsCashier) && activeTab === 'caisse' && (
           <div className="overflow-x-auto">
@@ -606,9 +653,6 @@ const HotelPage: React.FC = () => {
               categories={['Réservations', 'Mini-bar', 'Achats', 'Maintenance', 'Autre']}
             />
           </div>
-        )}
-        {activeTab === 'rapport' && (
-          <HotelDailyReport refreshTrigger={dataRefreshKey} />
         )}
       </div>
 
@@ -633,14 +677,17 @@ const HotelPage: React.FC = () => {
           setIsReservationModalOpen(false);
           setSelectedReservation(null);
           setReservationPrefill(undefined);
+          setReservationScheduleLocked(false);
         }}
         initialData={selectedReservation}
         prefill={reservationPrefill}
+        scheduleLocked={reservationScheduleLocked}
         onSuccess={() => {
           setDataRefreshKey((prev) => prev + 1);
           setIsReservationModalOpen(false);
           setSelectedReservation(null);
           setReservationPrefill(undefined);
+          setReservationScheduleLocked(false);
         }}
       />
 

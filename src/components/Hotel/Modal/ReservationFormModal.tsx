@@ -106,6 +106,7 @@ interface ReservationFormModalProps {
   onClose: () => void;
   initialData: Reservation | null;
   prefill?: Partial<Reservation>;
+  scheduleLocked?: boolean;
   onSuccess?: () => void;
 }
 
@@ -114,6 +115,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   onClose,
   initialData,
   prefill,
+  scheduleLocked = false,
   onSuccess,
 }) => {
   // Récupération des données
@@ -156,6 +158,8 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [exchangeRate, setExchangeRate] = useState<string>('');
   const todayKey = dateKey(new Date());
+  const isPlanningPrefill = !initialData && Boolean(prefill?.room_id && prefill?.date_arrivee);
+  const isScheduleLocked = scheduleLocked || isPlanningPrefill;
   const roomReservations = reservations.filter(res =>
     res.room_id === formData.room_id &&
     res.id !== initialData?.id &&
@@ -348,12 +352,13 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
       });
       setDiscountPercent(0);
       setDiscountMode('none');
-      setSelectedRoom(null);
+      setSelectedRoom(rooms.find(room => room.id === prefill?.room_id) || null);
       setSelectedClient(null);
       setTarifCategory('PUBLIC');
       setOccupants([]);
       setExchangeRate('');
       setExtraServices([]);
+      setIsArrivalCalendarOpen(false);
     }
     setErrors({});
     setApiError(null);
@@ -436,6 +441,25 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
       }
     }
   };
+
+  useEffect(() => {
+    if (!isOpen || !isScheduleLocked || initialData) return;
+    calculateTotal(selectedRoom, formData.date_arrivee, formData.date_depart);
+  }, [
+    isOpen,
+    isScheduleLocked,
+    initialData,
+    selectedRoom,
+    formData.date_arrivee,
+    formData.date_depart,
+    formData.type_reservation,
+    formData.manual_price,
+    formData.laundry_included,
+    formData.laundry_price,
+    exchangeRate,
+    discountMode,
+    discountPercent,
+  ]);
 
   const handleDateChange = async (field: 'date_arrivee' | 'date_depart', value: string) => {
     const arrivee = field === 'date_arrivee' ? value : formData.date_arrivee;
@@ -925,7 +949,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                   errors.room_id ? 'border-red-500 focus:border-red-500' : ''
                 }`}
                 required
-                disabled={isSubmitting}
+                disabled={isSubmitting || isScheduleLocked}
                 style={{ minHeight: '42px' }}
               >
                 <option value="">Sélectionner une chambre</option>
@@ -1039,7 +1063,7 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                     className={`input-field flex min-h-[42px] w-full items-center justify-between rounded-lg px-3.5 py-2.5 text-left text-sm ${
                       errors.date_arrivee ? 'border-red-500 focus:border-red-500' : ''
                     }`}
-                    disabled={isSubmitting || !formData.room_id || reservationsLoading}
+                    disabled={isSubmitting || isScheduleLocked || !formData.room_id || reservationsLoading}
                   >
                     <span className={formData.date_arrivee ? 'text-primary' : 'text-muted'}>
                       {formData.date_arrivee
@@ -1101,6 +1125,9 @@ export const ReservationFormModal: React.FC<ReservationFormModalProps> = ({
                     </div>
                   )}
                 </div>
+                {isScheduleLocked && (
+                  <p className="text-xs text-muted">La chambre et la date d'arrivée sont fixées par le planning.</p>
+                )}
                 {errors.date_arrivee && (
                   <p className="text-red-400 text-xs flex items-center gap-1">
                     <AlertCircle size={11} /> {errors.date_arrivee}
