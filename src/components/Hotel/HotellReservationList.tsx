@@ -17,7 +17,9 @@ import {
   UserCheck,
   DoorOpen,
   CreditCard,
-  Printer
+  Printer,
+  Plus,
+  Save
 } from 'lucide-react';
 import { printReservationTicket, receiptDataFromReservation } from '../../utils/hotelReceipt';
 import { useReservations } from '../../hooks/useReservations';
@@ -28,6 +30,7 @@ import AuthService from '../../services/authService';
 import { reservationService } from '../../services/reservation.service';
 import api from '../../lib/api';
 import spaService from '../../services/spa.service';
+import { escapeHtml } from '../../utils/thermalPrint';
 
 interface ReservationListProps {
   reservations?: Reservation[];
@@ -70,25 +73,79 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
   const [checkedOutReservationIds, setCheckedOutReservationIds] = useState<Set<number>>(new Set());
   const [staysLoading, setStaysLoading] = useState(true);
   const [barSpendByReservation, setBarSpendByReservation] = useState<Record<number, number>>({});
+  const [invoiceBeingEdited, setInvoiceBeingEdited] = useState<{ reservation: Reservation; invoice: any } | null>(null);
+  const [invoiceDraftItems, setInvoiceDraftItems] = useState<Array<{ description: string; quantite: number; prix_unitaire: number }>>([]);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [invoiceSaving, setInvoiceSaving] = useState(false);
 
   const handlePrintInvoice = async (reservation: Reservation) => {
+    const popup = window.open('', '_blank');
+    if (!popup) {
+      toast.error('Autorisez les fenêtres contextuelles pour imprimer la facture.');
+      return;
+    }
+    popup.opener = null;
+    popup.document.write('<!doctype html><html><head><title>Facture</title></head><body>Chargement de la facture…</body></html>');
     try {
       const invoices = await reservationService.getHotelInvoices(reservation.id);
       const invoice = Array.isArray(invoices)
         ? invoices.find((item: any) => item.invoice_type === (reservation.statut === 'TERMINEE' ? 'FINALE' : 'PROFORMA')) || invoices[0]
         : invoices;
       if (!invoice) throw new Error('Facture introuvable');
-      const popup = window.open('', '_blank', 'noopener,noreferrer');
       if (!popup) throw new Error('La fenêtre d’impression a été bloquée');
       const rows = (invoice.items || []).map((item: any) =>
-        `<tr><td>${String(item.description || '').replace(/[<>&]/g, '')}</td><td>${Number(item.montant || 0).toLocaleString('fr-FR')} Ar</td></tr>`
+        `<tr><td>${escapeHtml(item.description || '')} × ${Number(item.quantite || 1)}</td><td>${Number(item.montant || 0).toLocaleString('fr-FR')} Ar</td></tr>`
       ).join('');
-      popup.document.write(`<html><head><title>${invoice.numero}</title><style>body{font-family:Arial;padding:24px}table{width:100%;border-collapse:collapse}td{padding:8px;border-bottom:1px solid #ddd}.total{font-weight:bold;font-size:18px}</style></head><body><h1>${invoice.invoice_type === 'FINALE' ? 'Facture finale' : 'Facture proforma'}</h1><p>N° ${invoice.numero}</p><table>${rows}</table><p class="total">Total : ${Number(invoice.montant_total || 0).toLocaleString('fr-FR')} Ar</p><p>Statut : ${invoice.statut}</p></body></html>`);
+      popup.document.write(`<html><head><meta charset="utf-8"><title>${escapeHtml(invoice.numero || 'Facture')}</title><style>body{font-family:Arial;padding:24px}table{width:100%;border-collapse:collapse}td{padding:8px;border-bottom:1px solid #ddd}.total{font-weight:bold;font-size:18px}</style></head><body><h1>${invoice.invoice_type === 'FINALE' ? 'Facture finale' : 'Facture proforma'}</h1><p>N° ${escapeHtml(invoice.numero || '')}</p><table>${rows}</table><p class="total">Total : ${Number(invoice.montant_total || 0).toLocaleString('fr-FR')} Ar</p><p>Statut : ${escapeHtml(invoice.statut || '')}</p></body></html>`);
       popup.document.close();
       popup.focus();
-      popup.print();
+      window.setTimeout(() => popup.print(), 250);
     } catch (error) {
+      popup.close();
       toast.error(error instanceof Error ? error.message : 'Impossible d’imprimer la facture');
+    }
+  };
+
+  const handleEditInvoice = async (reservation: Reservation) => {
+    setInvoiceLoading(true);
+    try {
+      const invoices = await reservationService.getHotelInvoices(reservation.id);
+      const invoice = Array.isArray(invoices)
+        ? invoices.find((item: any) => item.invoice_type === 'PROFORMA')
+        : invoices?.invoice_type === 'PROFORMA' ? invoices : null;
+      if (!invoice || Number(invoice.editable) !== 1) {
+        toast.error('Cette facture n’est plus modifiable.');
+        return;
+      }
+      setInvoiceDraftItems((invoice.items || []).map((item: any) => ({
+        description: item.description || '',
+        quantite: Number(item.quantite || 1),
+        prix_unitaire: Number(item.prix_unitaire || 0),
+      })));
+      setInvoiceBeingEdited({ reservation, invoice });
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Impossible de charger la facture.');
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+
+  const handleSaveInvoice = async () => {
+    if (!invoiceBeingEdited || invoiceSaving) return;
+    if (!invoiceDraftItems.length || invoiceDraftItems.some((item) => !item.description.trim() || item.quantite <= 0 || item.prix_unitaire < 0)) {
+      toast.error('Vérifiez la description, la quantité et le prix de chaque ligne.');
+      return;
+    }
+    setInvoiceSaving(true);
+    try {
+      await reservationService.updateHotelInvoice(invoiceBeingEdited.reservation.id, invoiceBeingEdited.invoice.id, invoiceDraftItems);
+      setInvoiceBeingEdited(null);
+      await loadReservations();
+      toast.success('Facture mise à jour.');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Impossible de modifier la facture.');
+    } finally {
+      setInvoiceSaving(false);
     }
   };
   const [spaSpendByReservation, setSpaSpendByReservation] = useState<Record<number, number>>({});
@@ -652,7 +709,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
                       </button>
                     )}
                     {/* Bouton Encaisser dynamique - Only show after check-in */}
-                    {onEncaisser && (res.statut === 'CHECKED_IN' || res.statut === 'EN_COURS') && !encaissedIds.includes(res.id) && (
+                    {onEncaisser && (res.statut === 'CHECKED_IN' || res.statut === 'EN_COURS') && !encaissedIds.includes(res.id) && Number(res.montant_total || 0) - Number(res.montant_paye || 0) > 0.01 && (
                       <button
                         type="button"
                         onClick={() => onEncaisser(res)}
@@ -692,6 +749,17 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
                     >
                       Facture
                     </button>
+                    {res.statut !== 'TERMINEE' && res.statut !== 'ANNULEE' && (
+                      <button
+                        type="button"
+                        onClick={() => void handleEditInvoice(res)}
+                        disabled={invoiceLoading}
+                        className="px-2 py-1 text-xs rounded border border-amber-500/30 text-amber-300 hover:bg-amber-500/10 disabled:opacity-50"
+                        title="Modifier la facture proforma"
+                      >
+                        Modifier facture
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setExpandedId(expandedId === res.id ? null : res.id)}
@@ -780,6 +848,45 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
           ))
         )}
       </div>
+
+      {invoiceBeingEdited && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-gray-300 bg-white text-black">
+            <div className="flex items-center justify-between border-b border-gray-200 p-5">
+              <div>
+                <h3 className="font-semibold text-black">Modifier la facture proforma</h3>
+                <p className="mt-1 text-sm text-gray-600">Réservation #{invoiceBeingEdited.reservation.id} · {invoiceBeingEdited.invoice.numero}</p>
+              </div>
+              <button type="button" onClick={() => setInvoiceBeingEdited(null)} className="rounded p-1 text-gray-600 hover:bg-gray-100" aria-label="Fermer"><X size={18} /></button>
+            </div>
+            <div className="space-y-3 overflow-y-auto p-5">
+              {invoiceDraftItems.map((item, index) => (
+                <div key={index} className="grid grid-cols-1 gap-2 rounded-lg border border-gray-300 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_90px_130px_110px_36px] sm:items-end">
+                  <label className="text-xs text-gray-700">Description
+                    <input value={item.description} onChange={(event) => setInvoiceDraftItems((rows) => rows.map((row, i) => i === index ? { ...row, description: event.target.value } : row))} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black" />
+                  </label>
+                  <label className="text-xs text-gray-700">Quantité
+                    <input type="number" min="0.01" step="0.01" value={item.quantite} onChange={(event) => setInvoiceDraftItems((rows) => rows.map((row, i) => i === index ? { ...row, quantite: Number(event.target.value) } : row))} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black" />
+                  </label>
+                  <label className="text-xs text-gray-700">Prix unitaire (Ar)
+                    <input type="number" min="0" step="1" value={item.prix_unitaire} onChange={(event) => setInvoiceDraftItems((rows) => rows.map((row, i) => i === index ? { ...row, prix_unitaire: Number(event.target.value) } : row))} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black" />
+                  </label>
+                  <div className="text-sm font-semibold text-black sm:pb-2">{formatCurrency(item.quantite * item.prix_unitaire)}</div>
+                  <button type="button" onClick={() => setInvoiceDraftItems((rows) => rows.filter((_, i) => i !== index))} className="rounded p-2 text-red-400 hover:bg-red-500/10" title="Supprimer la ligne"><Trash2 size={16} /></button>
+                </div>
+              ))}
+              <button type="button" onClick={() => setInvoiceDraftItems((rows) => [...rows, { description: '', quantite: 1, prix_unitaire: 0 }])} className="flex items-center gap-2 rounded-lg border border-dashed border-gray-500 bg-white px-3 py-2 text-sm font-medium text-black hover:border-gray-700 hover:bg-gray-100"><Plus size={16} className="text-gray-800" /> Ajouter une ligne</button>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 p-5">
+              <strong className="text-black">Total : {formatCurrency(invoiceDraftItems.reduce((sum, item) => sum + item.quantite * item.prix_unitaire, 0))}</strong>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setInvoiceBeingEdited(null)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-800 hover:bg-gray-100">Annuler</button>
+                <button type="button" onClick={() => void handleSaveInvoice()} disabled={invoiceSaving} className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50">{invoiceSaving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />} Enregistrer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de suppression */}
       {isDeleteModalOpen && reservationToDelete && (

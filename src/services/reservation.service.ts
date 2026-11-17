@@ -190,6 +190,14 @@ export const reservationService = {
     return response.data.data;
   },
 
+  updateHotelInvoice: async (reservationId: number, invoiceId: number, items: Array<{ description: string; quantite: number; prix_unitaire: number }>) => {
+    const response = await api.put<ApiResponse<any>>(
+      `${BASE_URL}/${reservationId}/invoices/${invoiceId}`,
+      { items }
+    );
+    return response.data.data;
+  },
+
   checkOut: async (stayId: number): Promise<Stay> => {
     try {
       const response = await api.post<ApiResponse<Stay>>(`${BASE_URL.replace('/reservations', '')}/stays/check-out/${stayId}`);
