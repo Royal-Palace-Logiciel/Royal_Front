@@ -41,6 +41,7 @@ export interface Product {
   unite: string;
   prix_achat: number;
   prix_vente: number;
+  quantite_stock?: number;
   actif: boolean;
   type_produit: 'MATIERE_PREMIERE' | 'PRODUIT_FINI' | 'CONSOMMABLE' | 'SERVICE';
   category?: Category;

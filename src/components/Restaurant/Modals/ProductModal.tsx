@@ -63,6 +63,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     code: '',
     category_id: 0,
     prix_vente: 0,
+    quantite_stock: 0,
     type_produit: 'PRODUIT_FINI' as const,
     actif: true
   });
@@ -80,6 +81,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         code: editingProduct.code || '',
         category_id: editingProduct.category_id || 0,
         prix_vente: editingProduct.prix_vente || 0,
+        quantite_stock: Number(editingProduct.quantite_stock || 0),
         type_produit: (editingProduct.type_produit || 'PRODUIT_FINI') as any,
         actif: editingProduct.actif ?? true
       });
@@ -89,6 +91,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         code: '',
         category_id: 0,
         prix_vente: 0,
+        quantite_stock: 0,
         type_produit: 'PRODUIT_FINI',
         actif: true
       });
@@ -201,6 +204,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         code: form.code,
         category_id: categoryId,
         prix_vente: form.prix_vente,
+        quantite_stock: form.quantite_stock,
         unite: editingProduct?.unite || 'PIECE',
         type_produit: form.type_produit,
         actif: form.actif,
@@ -268,6 +272,16 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             step={1000}
           />
         </div>
+
+        <Input
+          label="Stock disponible (Restaurant)"
+          type="number"
+          min={0}
+          step={1}
+          value={form.quantite_stock}
+          onChange={(event) => setForm({ ...form, quantite_stock: Math.max(0, Number(event.target.value)) })}
+          placeholder="0"
+        />
 
         <section className="space-y-3 rounded-xl border border-slate-700/70 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
