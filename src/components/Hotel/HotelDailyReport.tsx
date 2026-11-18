@@ -164,8 +164,8 @@ const EMPTY_AUTO_STATE: HotelDailyReportAutoState = {
   heureFinManuelle: false,
 };
 
-/** Réservation occupant la chambre pendant la nuitée du `reportDate`. */
-const findReservationForNight = (
+/** Réservation dont l'arrivée est prévue le jour sélectionné. */
+const findReservationForDate = (
   reservations: Reservation[],
   roomId: number,
   reportDate: string
@@ -175,13 +175,7 @@ const findReservationForNight = (
     if (res?.statut === 'ANNULEE' || res?.statut === 'NO_SHOW') return false;
 
     const arrivee = String(res?.date_arrivee || '').slice(0, 10);
-    const depart = String(res?.date_depart || '').slice(0, 10);
-    if (!arrivee || arrivee > reportDate) return false;
-
-    // Séjour ouvert (départ non défini) ou usage à la journée : la nuitée compte
-    // dès lors que l'arrivée est celle du rapport.
-    if (!depart || depart <= arrivee) return arrivee === reportDate;
-    return depart > reportDate;
+    return String(res?.date_arrivee || '').slice(0, 10) === reportDate;
   });
 
   if (candidates.length === 0) return null;
@@ -245,18 +239,6 @@ const buildLineFromReservation = (
     e: '',
     ac: '',
   };
-};
-
-const buildLineFromRoom = (room: Room): HotelDailyReportRoomLine => {
-  if (room.statut === 'MAINTENANCE' || room.statut === 'HORS_SERVICE') {
-    return {
-      ...emptyLine(room.numero),
-      room_id: room.id,
-      etat: 'MAINTENANCE',
-      occupant: room.statut === 'MAINTENANCE' ? 'Maintenance' : 'Hors service',
-    };
-  }
-  return { ...emptyLine(room.numero), room_id: room.id };
 };
 
 const computeMetrics = (lines: HotelDailyReportRoomLine[]): HotelDailyReportMetrics => {
@@ -337,15 +319,17 @@ export const HotelDailyReport: React.FC<HotelDailyReportProps> = ({ refreshTrigg
 
   const roomsReady = !roomsLoading && rooms.length > 0;
 
-  // Situation reconstituée depuis les chambres et les réservations de la nuitée.
+  // Seules les chambres dont l'arrivée est prévue à la date sélectionnée entrent
+  // dans le rapport. Les chambres libres ou déjà occupées depuis un jour antérieur
+  // ne sont pas listées.
   const generatedLines = useMemo(() => {
     const clientsById = new Map(clients.map((client) => [client.id, client]));
     return [...rooms]
       .sort((a, b) => compareRoomNumbers(a.numero, b.numero))
-      .map((room) => {
-        const reservation = findReservationForNight(reservations, room.id, reportDate);
-        if (!reservation) return buildLineFromRoom(room);
-        return buildLineFromReservation(room, reservation, clientsById.get(reservation.client_id));
+      .flatMap((room) => {
+        const reservation = findReservationForDate(reservations, room.id, reportDate);
+        if (!reservation) return [];
+        return [buildLineFromReservation(room, reservation, clientsById.get(reservation.client_id))];
       });
   }, [rooms, reservations, clients, reportDate]);
 

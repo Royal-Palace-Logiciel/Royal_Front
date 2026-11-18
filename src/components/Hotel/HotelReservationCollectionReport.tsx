@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Clipboard, FileText, Printer, Save } from 'lucide-react';
 import { formatCurrency } from '../../utils/data';
 import { reservationService, type HotelReservationCollectionReport as CollectionReport } from '../../services/reservation.service';
+import { clientService, type Client as HotelClient } from '../../services/client.service';
 import type { Reservation, Room } from '../../types/hotel.types';
 
 interface Props {
@@ -45,10 +46,25 @@ export const HotelReservationCollectionReport: React.FC<Props> = ({ reservations
     ? selectedDate
     : selectedMonth ? `${selectedMonth}-${monthLastDay}` : '';
   const [report, setReport] = useState<CollectionReport | null>(null);
+  const [clients, setClients] = useState<HotelClient[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    clientService.getClients()
+      .then((rows) => { if (active) setClients(rows); })
+      .catch((error) => console.error('Erreur chargement des clients du rapport hôtelier:', error));
+    return () => { active = false; };
+  }, [refreshTrigger]);
+
+  const clientById = useMemo(() => new Map(clients.map((client) => [client.id, client])), [clients]);
+  const guestName = (reservation: Reservation) => {
+    const client = reservation.client || clientById.get(reservation.client_id);
+    return [client?.prenom, client?.nom].filter(Boolean).join(' ') || `Client #${reservation.client_id}`;
+  };
 
   useEffect(() => {
     let active = true;
@@ -95,12 +111,11 @@ export const HotelReservationCollectionReport: React.FC<Props> = ({ reservations
       const roomNumber = reservation.room?.numero
         || rooms.find((room) => room.id === reservation.room_id)?.numero
         || `#${reservation.room_id}`;
-      const guest = [reservation.client?.prenom, reservation.client?.nom].filter(Boolean).join(' ')
-        || `Client #${reservation.client_id}`;
+      const guest = guestName(reservation);
       const channel = reservation.type_reservation === 'BOOKING' ? 'Booking' : 'Sur place';
       return `Chambre ${roomNumber} — ${guest} — ${displayDate(String(reservation.date_arrivee).slice(0, 10))} au ${displayDate(String(reservation.date_depart).slice(0, 10))} — ${channel}`;
     }),
-  ].join('\n'), [startDate, endDate, report, reservationsForPeriod, rooms]);
+  ].join('\n'), [startDate, endDate, report, reservationsForPeriod, rooms, clients]);
 
   const saveReport = async () => {
     if (!report) return;
@@ -228,7 +243,7 @@ export const HotelReservationCollectionReport: React.FC<Props> = ({ reservations
         const paid = Number(reservation.montant_paye) || 0;
         const values = [
           reservation.room?.numero || rooms.find((room) => room.id === reservation.room_id)?.numero || `#${reservation.room_id}`,
-          [reservation.client?.prenom, reservation.client?.nom].filter(Boolean).join(' ') || `Client #${reservation.client_id}`,
+          guestName(reservation),
           displayDate(String(reservation.date_arrivee).slice(0, 10)),
           displayDate(String(reservation.date_depart).slice(0, 10)),
           reservation.type_reservation === 'BOOKING' ? 'Booking' : 'Sur place',
@@ -344,7 +359,7 @@ export const HotelReservationCollectionReport: React.FC<Props> = ({ reservations
                   {reservationsForPeriod.map((reservation) => (
                     <tr key={reservation.id} className="border-t border-base text-primary">
                       <td className="px-3 py-2 font-medium">{reservation.room?.numero || rooms.find((room) => room.id === reservation.room_id)?.numero || `#${reservation.room_id}`}</td>
-                      <td className="px-3 py-2">{[reservation.client?.prenom, reservation.client?.nom].filter(Boolean).join(' ') || `Client #${reservation.client_id}`}</td>
+                      <td className="px-3 py-2">{guestName(reservation)}</td>
                       <td className="px-3 py-2">{displayDate(String(reservation.date_arrivee).slice(0, 10))} – {displayDate(String(reservation.date_depart).slice(0, 10))}</td>
                       <td className="px-3 py-2">{reservation.type_reservation === 'BOOKING' ? 'Booking' : 'Sur place'}</td>
                       <td className="px-3 py-2">{reservation.statut}</td>
