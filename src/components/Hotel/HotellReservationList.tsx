@@ -44,6 +44,44 @@ interface ReservationListProps {
   view?: 'active' | 'history';
 }
 
+const numberBelowThousandInFrench = (value: number): string => {
+  const units = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
+  const teens = ['dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf'];
+  const tens = ['', '', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante'];
+  const underHundred = (n: number): string => {
+    if (n < 10) return units[n];
+    if (n < 20) return teens[n - 10];
+    if (n < 70) {
+      const ten = Math.floor(n / 10);
+      const unit = n % 10;
+      if (unit === 0) return tens[ten];
+      if (unit === 1) return `${tens[ten]} et un`;
+      return `${tens[ten]}-${units[unit]}`;
+    }
+    if (n < 80) return n === 71 ? 'soixante et onze' : `soixante-${teens[n - 70]}`;
+    if (n === 80) return 'quatre-vingts';
+    return `quatre-vingt-${n < 90 ? units[n - 80] : teens[n - 90]}`;
+  };
+  const hundreds = Math.floor(value / 100);
+  const remainder = value % 100;
+  const prefix = hundreds === 0 ? '' : hundreds === 1 ? 'cent' : `${units[hundreds]} cent${remainder === 0 ? 's' : ''}`;
+  return [prefix, remainder ? underHundred(remainder) : ''].filter(Boolean).join(' ');
+};
+
+const amountInFrenchWords = (amount: number): string => {
+  let value = Math.max(0, Math.round(Number(amount) || 0));
+  if (value === 0) return 'zéro';
+  const parts: string[] = [];
+  const billions = Math.floor(value / 1_000_000_000);
+  if (billions) { parts.push(`${numberBelowThousandInFrench(billions)} milliard${billions > 1 ? 's' : ''}`); value %= 1_000_000_000; }
+  const millions = Math.floor(value / 1_000_000);
+  if (millions) { parts.push(`${numberBelowThousandInFrench(millions)} million${millions > 1 ? 's' : ''}`); value %= 1_000_000; }
+  const thousands = Math.floor(value / 1000);
+  if (thousands) { parts.push(`${thousands === 1 ? '' : `${numberBelowThousandInFrench(thousands)} `}mille`); value %= 1000; }
+  if (value) parts.push(numberBelowThousandInFrench(value));
+  return parts.join(' ');
+};
+
 export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEncaisser, onCheckIn, refreshTrigger, paymentCancelledTrigger, view = 'active' }) => {
   const {
     reservations,
@@ -87,7 +125,10 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
     popup.opener = null;
     popup.document.write('<!doctype html><html><head><title>Facture</title></head><body>Chargement de la facture…</body></html>');
     try {
-      const invoices = await reservationService.getHotelInvoices(reservation.id);
+      const [invoices, detailedReservation] = await Promise.all([
+        reservationService.getHotelInvoices(reservation.id),
+        reservationService.getReservationById(reservation.id).catch(() => reservation),
+      ]);
       const invoice = Array.isArray(invoices)
         ? invoices.find((item: any) => item.invoice_type === (reservation.statut === 'TERMINEE' ? 'FINALE' : 'PROFORMA')) || invoices[0]
         : invoices;
@@ -97,6 +138,51 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
         `<tr><td>${escapeHtml(item.description || '')} × ${Number(item.quantite || 1)}</td><td>${Number(item.montant || 0).toLocaleString('fr-FR')} Ar</td></tr>`
       ).join('');
       popup.document.write(`<html><head><meta charset="utf-8"><title>${escapeHtml(invoice.numero || 'Facture')}</title><style>body{font-family:Arial;padding:24px}table{width:100%;border-collapse:collapse}td{padding:8px;border-bottom:1px solid #ddd}.total{font-weight:bold;font-size:18px}</style></head><body><h1>${invoice.invoice_type === 'FINALE' ? 'Facture finale' : 'Facture proforma'}</h1><p>N° ${escapeHtml(invoice.numero || '')}</p><table>${rows}</table><p class="total">Total : ${Number(invoice.montant_total || 0).toLocaleString('fr-FR')} Ar</p><p>Statut : ${escapeHtml(invoice.statut || '')}</p></body></html>`);
+      const reservationClient = (detailedReservation.client || reservation.client) as any;
+      const clientName = [reservationClient?.prenom, reservationClient?.nom].filter(Boolean).join(' ')
+        || (detailedReservation as any).client_nom || (reservation as any).client_nom || `Client #${reservation.client_id}`;
+      const clientAddress = reservationClient?.adresse || '';
+      const isCompanyClient = ['SOCIETE', 'TOUR_OPERATEUR'].includes(String(reservationClient?.type_client || (detailedReservation as any).client_type_client || '').toUpperCase());
+      const occupantNames = (detailedReservation.occupants || reservation.occupants || [])
+        .map((occupant) => [occupant.prenom, occupant.nom].filter(Boolean).join(' ').trim())
+        .filter(Boolean);
+      const occupantLine = isCompanyClient && occupantNames.length
+        ? `<br><span class="label">Occupant${occupantNames.length > 1 ? 's' : ''}</span><strong>${occupantNames.map(escapeHtml).join('<br>')}</strong>`
+        : '';
+      const roomNumber = detailedReservation.room?.numero || reservation.room?.numero || (detailedReservation as any).room_numero || (reservation as any).room_numero
+        || rooms.find((room) => room.id === reservation.room_id)?.numero || String(reservation.room_id || '');
+      const nights = Math.max(0, Math.ceil((new Date(reservation.date_depart).getTime() - new Date(reservation.date_arrivee).getTime()) / 86400000));
+      const paymentModes: Record<string, string> = {
+        ESPECES: 'Espèces', TPE: 'TPE', MVOLA: 'MVola', ORANGE_MONEY: 'Orange Money',
+        CARTE: 'Carte bancaire', VIREMENT: 'Virement', CREDIT: 'Crédit', GRATUIT: 'Gratuit',
+      };
+      const paymentMode = paymentModes[String(reservation.moyen_paiement || '').toUpperCase()] || reservation.moyen_paiement || 'À préciser';
+      const totalAmount = Number(invoice.montant_total || 0);
+      const issuedDate = formatDate(invoice.issued_at || invoice.created_at || reservation.created_at || new Date().toISOString());
+      popup.document.open();
+      popup.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(invoice.numero || 'Facture')}</title>
+        <style>
+          @page{size:A4;margin:12mm}*{box-sizing:border-box}body{min-height:273mm;margin:0;display:flex;flex-direction:column;color:#202833;font:12px/1.45 Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+          .top-rule{height:4px;background:#b58a36;margin:0 0 18px}.letterhead{display:grid;grid-template-columns:40% 60%;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid #b9c0c8}
+          .logo{width:100%;max-width:245px;height:auto;object-fit:contain}.address{font-size:10.5px;line-height:1.55}.address strong{font-size:11px;color:#243447}
+          .title-row{display:flex;justify-content:space-between;align-items:flex-end;margin:20px 0 12px}.title{font-size:20px;letter-spacing:.08em;color:#243447;margin:0}.invoice-no{text-align:right;font-size:12px}
+          .meta{display:grid;grid-template-columns:1.2fr 1fr 1fr;border:1px solid #aab2bc;background:#f2f4f6;margin:12px 0 20px}.meta-cell{padding:10px 12px;border-right:1px solid #c6ccd3;min-height:58px}.meta-cell:last-child{border-right:0}.label{display:block;color:#687483;font-size:9px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}.meta strong{font-size:12px}
+          .stay{display:flex;flex-wrap:wrap;gap:12px 24px;margin:0 0 18px}.stay span{color:#536170}.stay strong{color:#202833}
+          table{width:100%;border-collapse:collapse}thead{display:table-header-group}th{padding:9px 8px;text-align:left;background:#243447;color:white;text-transform:uppercase;letter-spacing:.06em;font-size:9px}th:last-child,td:last-child{text-align:right}td{padding:10px 8px;border-bottom:1px solid #d9dee4}tbody tr:nth-child(even){background:#f7f8fa}.qty,.unit{text-align:center!important}.unit{white-space:nowrap}
+          .total-wrap{display:flex;justify-content:flex-end;margin:15px 0 28px}.total{min-width:250px;border-top:2px solid #b58a36;padding:10px 0;display:flex;justify-content:space-between;align-items:baseline;font-size:12px}.total strong{font-size:18px;color:#243447}
+          .sign{margin-top:24px;text-align:right;color:#65717e;font-size:10px}
+          .footer{margin-top:auto;border-top:1px solid #b9c0c8;padding-top:7px;color:#536170;font-size:8.5px;line-height:1.45}.footer-summary{margin-bottom:7px;line-height:1.55}.footer-summary strong{font-style:italic;color:#243447}.footer-legal{text-align:center;border-top:1px solid #d8dde3;padding-top:5px}.footer-legal strong{color:#243447;letter-spacing:.04em}
+          @media screen{body{max-width:210mm;min-height:273mm;margin:18px auto;padding:12mm;box-shadow:0 4px 24px #17212b22}}
+        </style></head><body><div class="top-rule"></div>
+        <header class="letterhead"><img class="logo" src="/logo_n.png" alt="Royal Palace Antsirabe"><div class="address"><strong>Lot 512 C 61 Tsarasaotra, Antsirabe 110</strong><br>CIF 0046292 / DGI-M du 09/05/2025<br>NIF 4000133786<br>STAT 55101 12 2011 0 00244<br>Tél. 034 49 040 40 / 020 44 490 40<br>Mail : royalpalace.resa@moov.mg</div></header>
+        <div class="title-row"><h1 class="title">${invoice.invoice_type === 'FINALE' ? 'FACTURE' : 'FACTURE PROFORMA'}</h1><div class="invoice-no"><strong>N° ${escapeHtml(invoice.numero || '')}</strong><br>${escapeHtml(issuedDate)}</div></div>
+        <section class="meta"><div class="meta-cell"><span class="label">Client</span><strong>${escapeHtml(clientName)}</strong>${occupantLine}${clientAddress ? `<br>${escapeHtml(clientAddress)}` : ''}</div><div class="meta-cell"><span class="label">Chambre</span><strong>${escapeHtml(roomNumber)}</strong></div><div class="meta-cell"><span class="label">Date de facture</span><strong>${escapeHtml(issuedDate)}</strong></div></section>
+        <div class="stay"><span>Date arrivée : <strong>${escapeHtml(formatDate(reservation.date_arrivee))}</strong></span><span>Date départ : <strong>${escapeHtml(formatDate(reservation.date_depart))}</strong></span><span>Nuits : <strong>${nights}</strong></span></div>
+        <table><thead><tr><th>Désignation</th><th class="qty">Qté</th><th class="unit">Prix unitaire</th><th>Total</th></tr></thead><tbody>${(invoice.items || []).map((item: any) => `<tr><td>${escapeHtml(item.description || '')}</td><td class="qty">${Number(item.quantite || 1)}</td><td class="unit">${Number(item.prix_unitaire || 0).toLocaleString('fr-FR')} Ar</td><td>${Number(item.montant || 0).toLocaleString('fr-FR')} Ar</td></tr>`).join('')}</tbody></table>
+        <div class="total-wrap"><div class="total"><span>TOTAL À PAYER</span><strong>${totalAmount.toLocaleString('fr-FR')} Ar</strong></div></div>
+        <div class="sign">${escapeHtml(issuedDate)}<br>La Direction</div>
+        <footer class="footer"><div class="footer-summary">Arrêté la présente facture à la somme de : <strong>${amountInFrenchWords(totalAmount)} Ariary</strong><br>Échéance : 1 mois après réception de la facture<br>Mode de paiement : ${escapeHtml(paymentMode)}</div><div class="footer-legal"><strong>Service et taxes compris · ROYAL PALACE · ANTSIRABE</strong><br>CIF 0046292 / DGI-M du 09/05/2025 · NIF 4000133786 · STAT 55101 12 2011 0 00244</div></footer>
+        </body></html>`);
       popup.document.close();
       popup.focus();
       window.setTimeout(() => popup.print(), 250);
