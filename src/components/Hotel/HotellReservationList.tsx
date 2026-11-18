@@ -112,6 +112,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
   const [staysLoading, setStaysLoading] = useState(true);
   const [barSpendByReservation, setBarSpendByReservation] = useState<Record<number, number>>({});
   const [invoiceBeingEdited, setInvoiceBeingEdited] = useState<{ reservation: Reservation; invoice: any } | null>(null);
+  const [invoiceEditPaymentModes, setInvoiceEditPaymentModes] = useState<Array<{ name: string; amount: number }>>([]);
   const [invoiceDraftItems, setInvoiceDraftItems] = useState<Array<{ description: string; quantite: number; prix_unitaire: number }>>([]);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [invoiceSaving, setInvoiceSaving] = useState(false);
@@ -125,9 +126,10 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
     popup.opener = null;
     popup.document.write('<!doctype html><html><head><title>Facture</title></head><body>Chargement de la facture…</body></html>');
     try {
-      const [invoices, detailedReservation] = await Promise.all([
+      const [invoices, detailedReservation, reservationPayments] = await Promise.all([
         reservationService.getHotelInvoices(reservation.id),
         reservationService.getReservationById(reservation.id).catch(() => reservation),
+        reservationService.getReservationPayments(reservation.id).catch(() => []),
       ]);
       const invoice = Array.isArray(invoices)
         ? invoices.find((item: any) => item.invoice_type === (reservation.statut === 'TERMINEE' ? 'FINALE' : 'PROFORMA')) || invoices[0]
@@ -156,7 +158,23 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
         ESPECES: 'Espèces', TPE: 'TPE', MVOLA: 'MVola', ORANGE_MONEY: 'Orange Money',
         CARTE: 'Carte bancaire', VIREMENT: 'Virement', CREDIT: 'Crédit', GRATUIT: 'Gratuit',
       };
-      const paymentMode = paymentModes[String(reservation.moyen_paiement || '').toUpperCase()] || reservation.moyen_paiement || 'À préciser';
+      const paymentTotals = new Map<string, number>();
+      reservationPayments.forEach((payment) => {
+        const modes = payment.details?.modes_paiement;
+        if (modes?.length) {
+          modes.forEach((mode) => {
+            const key = String(mode.moyen_paiement || '').toUpperCase();
+            if (key) paymentTotals.set(key, (paymentTotals.get(key) || 0) + Number(mode.montant || 0));
+          });
+        } else if (payment.moyen_paiement) {
+          const key = payment.moyen_paiement.toUpperCase();
+          paymentTotals.set(key, (paymentTotals.get(key) || 0) + Number(payment.montant_encaisse ?? payment.montant ?? 0));
+        }
+      });
+      const paymentMode = paymentTotals.size
+        ? [...paymentTotals.entries()].map(([key, amount]) => `${paymentModes[key] || key.replace(/_/g, ' ')} (${amount.toLocaleString('fr-FR')} Ar)`).join(' · ')
+        : paymentModes[String(detailedReservation.moyen_paiement || reservation.moyen_paiement || '').toUpperCase()]
+          || detailedReservation.moyen_paiement || reservation.moyen_paiement || 'À préciser';
       const totalAmount = Number(invoice.montant_total || 0);
       const issuedDate = formatDate(invoice.issued_at || invoice.created_at || reservation.created_at || new Date().toISOString());
       popup.document.open();
@@ -195,7 +213,10 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
   const handleEditInvoice = async (reservation: Reservation) => {
     setInvoiceLoading(true);
     try {
-      const invoices = await reservationService.getHotelInvoices(reservation.id);
+      const [invoices, payments] = await Promise.all([
+        reservationService.getHotelInvoices(reservation.id),
+        reservationService.getReservationPayments(reservation.id).catch(() => []),
+      ]);
       const invoice = Array.isArray(invoices)
         ? invoices.find((item: any) => item.invoice_type === 'PROFORMA')
         : invoices?.invoice_type === 'PROFORMA' ? invoices : null;
@@ -207,6 +228,31 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
         description: item.description || '',
         quantite: Number(item.quantite || 1),
         prix_unitaire: Number(item.prix_unitaire || 0),
+      })));
+      const paymentLabels: Record<string, string> = {
+        ESPECES: 'Espèces', TPE: 'TPE', MVOLA: 'MVola', ORANGE_MONEY: 'Orange Money',
+        CARTE: 'Carte bancaire', VIREMENT: 'Virement', CREDIT: 'Crédit', GRATUIT: 'Gratuit',
+      };
+      const paymentTotals = new Map<string, number>();
+      payments.forEach((payment) => {
+        const modes = payment.details?.modes_paiement;
+        if (modes?.length) {
+          modes.forEach((mode) => {
+            const key = String(mode.moyen_paiement || '').toUpperCase();
+            if (key) paymentTotals.set(key, (paymentTotals.get(key) || 0) + Number(mode.montant || 0));
+          });
+        } else if (payment.moyen_paiement) {
+          const key = payment.moyen_paiement.toUpperCase();
+          paymentTotals.set(key, (paymentTotals.get(key) || 0) + Number(payment.montant_encaisse ?? payment.montant ?? 0));
+        }
+      });
+      if (paymentTotals.size === 0 && reservation.moyen_paiement) {
+        const key = reservation.moyen_paiement.toUpperCase();
+        paymentTotals.set(key, 0);
+      }
+      setInvoiceEditPaymentModes([...paymentTotals.entries()].map(([key, amount]) => ({
+        name: paymentLabels[key] || key.replace(/_/g, ' '),
+        amount,
       })));
       setInvoiceBeingEdited({ reservation, invoice });
     } catch (error: any) {
@@ -946,6 +992,18 @@ export const ReservationList: React.FC<ReservationListProps> = ({ onEdit, onEnca
               <button type="button" onClick={() => setInvoiceBeingEdited(null)} className="rounded p-1 text-gray-600 hover:bg-gray-100" aria-label="Fermer"><X size={18} /></button>
             </div>
             <div className="space-y-3 overflow-y-auto p-5">
+              <section className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-amber-900">Mode de paiement enregistré</h4>
+                {invoiceEditPaymentModes.length ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {invoiceEditPaymentModes.map((mode) => (
+                      <span key={mode.name} className="rounded-full bg-white px-3 py-1 text-sm text-gray-800 ring-1 ring-amber-200">
+                        {mode.name}{mode.amount > 0 ? ` · ${formatCurrency(mode.amount)}` : ''}
+                      </span>
+                    ))}
+                  </div>
+                ) : <p className="mt-1 text-sm text-gray-600">À préciser</p>}
+              </section>
               {invoiceDraftItems.map((item, index) => (
                 <div key={index} className="grid grid-cols-1 gap-2 rounded-lg border border-gray-300 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_90px_130px_110px_36px] sm:items-end">
                   <label className="text-xs text-gray-700">Description
